@@ -1,0 +1,6 @@
+{
+  "routes": [
+    { "path": "/", "title": "Abracadabra — Aprenda Web3" },
+    { "path": "/login", "title": "Área do aluno — Abracadabra" }
+  ]
+}
