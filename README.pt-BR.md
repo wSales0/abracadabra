@@ -1,231 +1,118 @@
 <p align="center">
-<a href="./README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-7C3AED?style=for-the-badge" /></a>
-  <a href="./README.pt-BR.md"><img alt="Português (BR )" src="https://img.shields.io/badge/lang-Português%20(BR )-14F195?style=for-the-badge&labelColor=09090F" /></a>
-</p> <p align="center">
-  <img src="./assets/logo-abracadabra.png" alt="Abracadabra" width="220" />
-</p> <h1 align="center">Abracadabra</h1> <p align="center">
-  <strong>Aprenda. Pratique. Interaja. Comprove.</strong>  
-
-  Uma experiência gamificada para aprender Web3 praticando, do primeiro conceito às primeiras decisões on-chain.
-</p> <p align="center">
-  <img alt="Status" src="https://img.shields.io/badge/status-protótipo%20de%20hackathon-7C3AED" />
-  <img alt="Rede" src="https://img.shields.io/badge/rede-Solana%20Devnet-14F195" />
-  <img alt="Categoria" src="https://img.shields.io/badge/categoria-EdTech-09090F" />
+  <a href="./README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-7C3AED?style=for-the-badge" /></a>
+  <a href="./README.pt-BR.md"><img alt="Português (BR)" src="https://img.shields.io/badge/lang-Português%20(BR)-14F195?style=for-the-badge&labelColor=09090F" /></a>
 </p>
 
-> **Status atual:** o frontend já possui landing page, login demonstrativo, dashboard do aluno, perfil editável, mercado cripto, manchetes relacionadas e sistema inicial de atividades com XP. Wallet, backend, autenticação real e ações on-chain ainda não estão integrados.
+<p align="center">
+  <img src="./assets/logo-abracadabra.png" alt="Abracadabra" width="220" />
+</p>
 
-## O produto
+<h1 align="center">Abracadabra · Web3 EdTech</h1>
 
-A Abracadabra transforma o aprendizado de Web3 em uma jornada prática e progressiva. A pessoa entra, acompanha o mercado, responde perguntas, recebe feedback e acumula XP enquanto constrói uma base de segurança e fundamentos.
+<p align="center">
+  <strong>Aprenda. Pratique. Converse. Evolua sem medo.</strong><br />
+  A plataforma educacional Web3 pensada para todas as idades — de jovens estudantes a idosos dando seus primeiros passos no universo cripto.
+</p>
 
-A experiência atual é um protótipo visual e funcional para hackathon. Ela não deve ser confundida com uma plataforma pronta para produção ou com uma ferramenta de recomendação financeira.
+<p align="center">
+  <img alt="Status" src="https://img.shields.io/badge/status-live%20production-14F195" />
+  <img alt="Rede" src="https://img.shields.io/badge/rede-Solana%20Devnet-14F195" />
+  <img alt="Chat" src="https://img.shields.io/badge/chat-WebSockets%20ao%20vivo-7C3AED" />
+  <img alt="Categoria" src="https://img.shields.io/badge/categoria-EdTech%20Web3-09090F" />
+  <img alt="Deploy" src="https://img.shields.io/badge/deploy-Vercel-black" />
+</p>
 
-## O que já foi implementado
+---
 
-- Landing page pública e área do aluno separadas.
+## 🧙‍♂️ O que é o Abracadabra?
 
-- Login demonstrativo local com `teste123` / `123`.
+O **Abracadabra** é uma plataforma EdTech gamificada que desmistifica o universo de blockchain e criptomoedas. 
 
-- Dashboard com abas de Mercado, Perfil e Atividades.
+Em vez de jogar os usuários direto em exchanges ou riscos reais, o Abracadabra oferece um **laboratório de prática 100% seguro**: analogias com o dia a dia (como comparar Chave Pública com Chave Pix), simuladores anti-golpe, carteira de teste com torneira de moedas gratuitas e uma comunidade ao vivo com pessoas de verdade navegando juntas.
 
-- Perfil editável com nome, bio, preferências e avatar salvo localmente.
+---
 
-- Mercado com preço, variação de 24 horas, ranking e capitalização dos principais ativos.
+## ✨ Principais Funcionalidades
 
-- Radar com maior alta, maior queda e líder por valor.
+### 🧪 1. Carteira Prática Web3 (Solana Devnet Simulada)
+- **Geração Automática de Carteira:** Toda conta recebe uma chave pública e saldo inicial de treino (2.5 SOL Devnet).
+- **Torneira Gratuita (Faucet):** Botão para solicitar +1.0 SOL de teste sempre que quiser praticar sem custo real.
+- **Simulador de Envio On-Chain:** Pratique preencher chaves públicas de destino, acompanhar o débito de taxas de rede (*Gas Fee*) e verificar a assinatura/hash da transação.
+- **Histórico Completo de Transações:** Exibição clara de débitos, créditos, taxas e status de confirmação.
 
-- Manchetes relacionadas carregadas somente quando o aluno seleciona um ativo.
+### 💬 2. Comunidade & Chat em Tempo Real
+- **Pessoas de Verdade ao Vivo:** Conexão contínua via WebSockets globais (MQTT sobre WSS via EMQX e HiveMQ + BroadcastChannel local).
+- **Detecção de Presença (Heartbeat):** A coluna de alunos conectados exibe exatamente quem está navegando no site agora. Se você estiver sozinho, a plataforma avisa e disponibiliza botão de convite para amigos.
+- **Troca de Ideias Instantânea:** Bate-papo ao vivo para tirar dúvidas com colegas e instrutores em tempo real.
 
-- Atividades com perguntas de conceitos, segurança e raciocínio.
+### 🛡️ 3. Simulador Anti-Golpe ("Cilada ou Seguro?")
+- **Casos Reais do Cotidiano:** Mensagens de WhatsApp se passando por suporte, falsos airdrops, sites clonados e contratos suspeitos.
+- **Explicações Didáticas:** Ao responder se a situação é segura ou cilada, o aluno recebe a justificativa em linguagem clara e aprende regras de ouro (ex: *“Nunca compartilhe suas 12 palavras ou Chave Privada”*).
 
-- Dificuldades iniciante, intermediário e avançado.
+### 🎯 4. Trilha do Aprendiz (Missões Guiadas)
+- Barra de progresso interativa com percentual de conclusão.
+- Missões didáticas: descobrir a chave pública, coletar no faucet, fazer transferência de treino, acertar desafios no laboratório e passar no teste de segurança.
+- Recompensas instantâneas em **XP** e **SOL de treino**.
 
-- XP, nível, aproveitamento, questões respondidas e feedback imediato.
+### 👓 5. Acessibilidade Inclusiva (Para Jovens e Idosos)
+- **Controle de Tamanho de Fonte:** Botão `Aa` no topo com 3 níveis (Normal, Grande, Muito Grande) com persistência local.
+- **Leitor em Áudio (Voz Nativa):** Botão de áudio para ouvir as perguntas e explicações em voz alta em português (Web Speech API).
+- **Tradutor do Cotidiano:** Dicionário intuitivo que compara termos técnicos com o dia a dia:
+  - *Chave Pública* = Sua Chave Pix (pode compartilhar sem medo).
+  - *Chave Privada* = Senha do Banco (nunca entregue a ninguém).
+  - *Gas Fee* = Tarifa de envio do correio/cartório.
+  - *Faucet* = Torneira pública de dinheiro de mentira para treinar.
 
-- Geração procedural de novas questões com alternativas embaralhadas e identificadores únicos locais.
+### 📊 6. Radar de Mercado e Notícias em Tempo Real
+- Cotações atualizadas das 8 principais moedas via API pública da [Crypto Vision News](https://cryptocurrency.cv/).
+- Radar diário de maior alta, maior queda e líder por market cap.
+- Manchetes com links diretos para as fontes originais respeitando direitos autorais.
 
-## Integração de mercado e notícias
+---
 
-O protótipo usa a API pública da [Crypto Vision News / cryptocurrency.cv](https://cryptocurrency.cv/):
+## 🛠️ Tecnologias Utilizadas
 
-```
-GET https://cryptocurrency.cv/api/market/coins?limit=8
-GET https://cryptocurrency.cv/api/news?category=bitcoin&limit=5
-GET https://cryptocurrency.cv/api/news?search=NomeDaCripto Simbolo&limit=5
-```
+- **Frontend:** React 19, TypeScript, Vite.
+- **Estilização:** CSS3 Moderno com variáveis, gradientes, Glassmorphism e Dark Mode.
+- **Comunicação em Tempo Real:** WebSockets (MQTT Client sobre TLS/WSS) + `BroadcastChannel` para multi-abas.
+- **Acessibilidade:** Web Speech API (Text-to-Speech) e Dynamic Font Scaling.
+- **Hospedagem & CI/CD:** Vercel integrada ao GitHub.
 
-A integração está em `src/lib/cryptoApi.ts`. Atualmente não há chave de API no frontend.
+---
 
-### Direitos autorais e atribuição
-
-A API agrega metadados e manchetes de publishers terceiros. O conteúdo original continua pertencendo aos respectivos publishers. A API ser pública ou gratuita **não significa que todas as matérias sejam livres de direitos autorais**.
-
-Por isso, o Abracadabra deve:
-
-- exibir somente título, publisher, data e link original;
-
-- manter atribuição visível à fonte;
-
-- levar o usuário ao artigo original;
-
-- não reproduzir corpo, resumo ou reescrita automática da matéria;
-
-- não copiar imagens de terceiros;
-
-- não apresentar o conteúdo como produzido pelo Abracadabra;
-
-- exibir o aviso de que os dados não constituem recomendação financeira.
-
-Para uso comercial ou publicação em escala, é necessário revisar novamente os [termos da API](https://cryptocurrency.cv/terms) e, quando necessário, confirmar os direitos diretamente com os publishers. A atribuição, sozinha, não substitui uma licença editorial.
-
-A API também informa limites de uso. O frontend faz poucas chamadas: mercado ao abrir o dashboard e notícias apenas quando o usuário seleciona um ativo. Não adicionar polling agressivo sem cache e controle de limites.
-
-## O que a pessoa do backend precisa buscar
-
-> 📄 **Documento Completo de Handoff:** Consulte [HANDOFF.pt-BR.md](./HANDOFF.pt-BR.md) para detalhes completos de schema SQL, Edge Functions, RLS, direitos autorais e critérios de aceite.
->
-> 📌 *Decisão atual: O frontend continua operando 100% independente com o usuário demonstrativo (`teste123` / `123`), sem necessidade de banco de dados neste momento.*
-
-Antes de trocar o protótipo por Supabase ou outra API, o responsável pelo backend deve definir e obter:
-
-### 1. Autenticação
-
-- provedor escolhido: Supabase Auth ou outro;
-
-- fluxo de cadastro, login, logout e recuperação de senha;
-
-- formato da sessão e renovação do token;
-
-- confirmação de e-mail, se será obrigatória;
-
-- regras de acesso às rotas privadas;
-
-- migração do usuário demonstrativo para usuários reais.
-
-### 2. Banco de dados
-
-Criar e documentar tabelas equivalentes a:
-
-- `profiles`: usuário, nome, bio, avatar, foco e preferências;
-
-- `activity_progress`: XP, nível, respostas, acertos e sequência;
-
-- `activity_attempts`: questão, alternativa escolhida, acerto, XP e timestamp;
-
-- `question_catalog`: banco de questões versionado;
-
-- `news_cache`: somente metadados permitidos e cache com prazo curto, se os termos permitirem;
-
-- `wallet_connections`: endereço público, rede e data de conexão, sem seed phrase ou chave privada.
-
-Também é necessário definir chaves, índices, timestamps, política de exclusão e retenção.
-
-### 3. Segurança e RLS
-
-- habilitar Row Level Security;
-
-- permitir que o usuário leia e edite somente o próprio perfil;
-
-- impedir que o cliente conceda XP livremente;
-
-- validar respostas, tentativas e recompensas no servidor;
-
-- nunca armazenar seed phrase ou chave privada;
-
-- manter chaves de serviços apenas em variáveis server-side;
-
-- configurar rate limiting e logs de erro.
-
-### 4. API de mercado e notícias
-
-- mover as chamadas de `cryptoApi.ts` para uma Edge Function ou API server-side;
-
-- adicionar cache e limite por usuário/IP;
-
-- definir o comportamento quando a fonte estiver indisponível;
-
-- guardar somente os campos autorizados: título, fonte, data e URL;
-
-- revisar os termos de cada publisher antes de monetizar ou redistribuir;
-
-- validar URLs e impedir conteúdo injetado no frontend.
-
-### 5. Atividades e XP
-
-- decidir se as questões continuarão no código, em tabela ou em CMS;
-
-- versionar questões e respostas corretas no servidor;
-
-- criar endpoint para iniciar uma atividade;
-
-- criar endpoint para enviar resposta e calcular XP server-side;
-
-- impedir repetição por usuário usando histórico de tentativas;
-
-- definir regras de dificuldade, streak, limite diário e níveis;
-
-- registrar eventos para analytics sem armazenar dados desnecessários.
-
-### 6. Wallet e Solana
-
-- escolher Wallet Adapter e wallets suportadas;
-
-- definir Devnet/Mainnet por ambiente;
-
-- validar assinatura e transações no servidor;
-
-- verificar RPC, limites, confirmação e tratamento de transações pendentes;
-
-- conceder conquistas somente após atividade on-chain verificável;
-
-- definir o que será armazenado: endereço público, assinatura, rede e status.
-
-## Estrutura atual do frontend
-
-```
-src/
-├── data/mockNews.ts              # dados antigos de demonstração
-├── lib/activityEngine.ts         # geração de questões, XP e níveis
-├── lib/cryptoApi.ts              # mercado e manchetes externas
-├── lib/demoAuth.ts               # autenticação e perfil locais
-├── pages/DashboardPage.tsx       # Mercado, Perfil e Atividades
-├── main.tsx                      # entrada e navegação do frontend
-├── styles.css                    # identidade visual e responsividade
-└── types.ts                      # tipos de domínio
-```
-
-## Como executar
+## 🚀 Como Rodar o Projeto Localmente
 
 ```bash
+# 1. Clone o repositório
+git clone https://github.com/wSales0/abracadabra.git
+cd abracadabra
+
+# 2. Instale as dependências
 npm install
+
+# 3. Inicie o servidor de desenvolvimento
 npm run dev
+
+# 4. Abra no navegador:
+# http://localhost:3000
 ```
 
-O projeto usa Vite, React e TypeScript e pode ser publicado na Vercel como frontend estático. O protótipo atual persiste login, perfil, contador de questões e progresso no `localStorage` do navegador.
+Para gerar a build de produção otimizada:
+```bash
+npm run build
+```
 
-## Segurança do protótipo
+---
 
-- Nunca inserir seed phrase ou chave privada.
+## 👥 Credenciais de Demonstração
 
-- Não tratar o dashboard como recomendação financeira.
+Para navegar e testar a plataforma:
+- **Login Demo:** `teste123`
+- **Senha Demo:** `123`
+- Ou utilize a opção **"Continuar com Google"** diretamente na tela inicial.
 
-- Não considerar o XP salvo no cliente como prova válida para produção.
+---
 
-- Não publicar chaves secretas no frontend.
+## 📄 Licença e Aviso Legal
 
-- Não armazenar corpo, resumo ou imagem de notícias de terceiros.
-
-## Time
-
-- [wSales0](https://github.com/wSales0)
-
-- [gsoares0017](https://github.com/gsoares0017)
-
-- [001zk](https://github.com/001zk)
-
-- [higomvp](https://github.com/higomvp)
-
-## Licença
-
-A ser definida pelo time. As licenças das fontes externas e dos publishers são independentes da licença do código do Abracadabra.
+O **Abracadabra** é um projeto com fins estritamente **educacionais** desenvolvido para hackathon. Os dados de mercado e notícias exibidos têm propósito pedagógico e não constituem recomendação de investimento financeiro.

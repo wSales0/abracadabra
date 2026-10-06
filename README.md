@@ -1,231 +1,113 @@
 <p align="center">
-<a href="./README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-7C3AED?style=for-the-badge" /></a>
-  <a href="./README.pt-BR.md"><img alt="Português (BR )" src="https://img.shields.io/badge/lang-Português%20(BR )-14F195?style=for-the-badge&labelColor=09090F" /></a>
-</p> <p align="center">
-  <img src="./assets/logo-abracadabra.png" alt="Abracadabra" width="220" />
-</p> <h1 align="center">Abracadabra</h1> <p align="center">
-  <strong>Learn. Practice. Interact. Prove.</strong>  
-
-  A gamified experience for learning Web3 by doing, from first concepts to early on-chain decisions.
-</p> <p align="center">
-  <img alt="Status" src="https://img.shields.io/badge/status-hackathon%20prototype-7C3AED" />
-  <img alt="Network" src="https://img.shields.io/badge/network-Solana%20Devnet-14F195" />
-  <img alt="Category" src="https://img.shields.io/badge/category-EdTech-09090F" />
+  <a href="./README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-7C3AED?style=for-the-badge" /></a>
+  <a href="./README.pt-BR.md"><img alt="Português (BR)" src="https://img.shields.io/badge/lang-Português%20(BR)-14F195?style=for-the-badge&labelColor=09090F" /></a>
 </p>
 
-> **Current status:** the frontend now includes a public landing page, demo login, student dashboard, editable profile, crypto market data, related headlines and an initial activity system with XP. Wallets, backend services, real authentication and on-chain actions are not integrated yet.
+<p align="center">
+  <img src="./assets/logo-abracadabra.png" alt="Abracadabra" width="220" />
+</p>
 
-## The product
+<h1 align="center">Abracadabra · Web3 EdTech</h1>
 
-Abracadabra turns Web3 learning into a practical, progressive journey. Users enter, follow market context, answer questions, receive feedback and earn XP while building a foundation in Web3 concepts and security.
+<p align="center">
+  <strong>Learn. Practice. Chat. Evolve with confidence.</strong><br />
+  The Web3 educational platform designed for everyone — from young digital natives to seniors taking their first steps in the crypto ecosystem.
+</p>
 
-The current experience is a functional visual prototype for a hackathon. It is not a production-ready platform and it is not a financial advice tool.
+<p align="center">
+  <img alt="Status" src="https://img.shields.io/badge/status-live%20production-14F195" />
+  <img alt="Network" src="https://img.shields.io/badge/network-Solana%20Devnet-14F195" />
+  <img alt="Chat" src="https://img.shields.io/badge/chat-Live%20WebSockets-7C3AED" />
+  <img alt="Category" src="https://img.shields.io/badge/category-EdTech%20Web3-09090F" />
+  <img alt="Deploy" src="https://img.shields.io/badge/deploy-Vercel-black" />
+</p>
 
-## Implemented today
+---
 
-- Public landing page and separate student area.
+## 🧙‍♂️ What is Abracadabra?
 
-- Local demo login with `teste123` / `123`.
+**Abracadabra** is a gamified EdTech platform that demystifies blockchain and crypto.
 
-- Dashboard tabs for Market, Profile and Activities.
+Instead of throwing users directly into exchanges and financial risk, Abracadabra provides a **100% safe practice sandbox**: everyday analogies (e.g. comparing Public Keys to instant Pix keys), anti-scam simulators, a test wallet with a free testnet faucet, and a live community chat with real people learning together in real time.
 
-- Editable profile with name, bio, preferences and locally persisted avatar.
+---
 
-- Market cards with price, 24-hour change, rank and market cap.
+## ✨ Key Features
 
-- Radar with top gainer, top loser and market-cap leader.
+### 🧪 1. Web3 Practice Wallet (Simulated Solana Devnet)
+- **Automatic Wallet Provisioning:** Every account receives a public address and a starter practice balance (2.5 Devnet SOL).
+- **Free Faucet:** Request +1.0 test SOL anytime to practice without spending real money.
+- **On-Chain Send Simulation:** Practice entering recipient public keys, accounting for network fees (*Gas Fees*), and viewing real-time transaction hash signatures.
+- **Transaction History:** Clear breakdown of debits, credits, fees, and confirmation statuses.
 
-- Related headlines loaded only after the user selects an asset.
+### 💬 2. Live Community & Real-Time Chat
+- **Real People Online:** Global WebSockets connection (MQTT over WSS via EMQX & HiveMQ + local BroadcastChannel).
+- **Presence Detection (Heartbeat):** The online list displays real visitors browsing the site at that exact moment. If you're alone, the app displays a shareable invite link for classmates.
+- **Instant Messaging:** Community chatroom to ask questions and share Web3 insights.
 
-- Activities covering concepts, security and reasoning.
+### 🛡️ 3. Anti-Scam Simulator ("Trap or Safe?")
+- **Real-World Scenarios:** Phishing messages impersonating support, fake airdrop giveaways, cloned dApps, and suspicious smart contracts.
+- **Actionable Takeaways:** Instant feedback explaining why a scenario is dangerous or safe, reinforcing core security habits (e.g., *“Never share your seed phrase or private key”*).
 
-- Beginner, intermediate and advanced difficulty.
+### 🎯 4. Student Mission Track
+- Interactive progress bar with milestone percentages.
+- Guided tasks: inspecting your public address, claiming from the faucet, making a practice transfer, passing lab quizzes, and completing security challenges.
+- Rewards in **XP** and **Practice SOL**.
 
-- XP, levels, accuracy, answered questions and immediate feedback.
+### 👓 5. Inclusive Accessibility (For Youth and Seniors)
+- **Dynamic Font Size Controls:** One-click `Aa` toggle for Normal, Large, and Extra Large typography with persistent memory.
+- **Voice Text-to-Speech:** Native speech reader in Brazilian Portuguese for activity questions and concepts (Web Speech API).
+- **Everyday Analogy Translator:** Simplifies technical jargon into daily concepts:
+  - *Public Key* = Your Pix address (safe to share).
+  - *Private Key* = Your banking password (never share).
+  - *Gas Fee* = Postal delivery or notary fee.
+  - *Faucet* = A public test fountain giving play money for learning.
 
-- Procedural question generation with shuffled choices and unique local IDs.
+### 📊 6. Market Radar & Real-Time News
+- Live prices for 8 top digital assets powered by [Crypto Vision News](https://cryptocurrency.cv/).
+- Daily radar for top gainer, top loser, and market cap leader.
+- Curated headlines with direct links to original publisher articles.
 
-## Market and news integration
+---
 
-The prototype uses the public [Crypto Vision News / cryptocurrency.cv](https://cryptocurrency.cv/) API:
+## 🛠️ Tech Stack
 
-```
-GET https://cryptocurrency.cv/api/market/coins?limit=8
-GET https://cryptocurrency.cv/api/news?category=bitcoin&limit=5
-GET https://cryptocurrency.cv/api/news?search=CoinName Symbol&limit=5
-```
+- **Frontend:** React 19, TypeScript, Vite.
+- **Styling:** Modern CSS3 with custom properties, Glassmorphism, and Dark Mode.
+- **Real-Time Engine:** WebSockets (MQTT Client over WSS) + `BroadcastChannel` for multi-tab sync.
+- **Accessibility:** Web Speech API (Text-to-Speech) and Font Scaling.
+- **Hosting & CI/CD:** Vercel with GitHub automated deployments.
 
-The integration lives in `src/lib/cryptoApi.ts`. No API key is currently placed in the frontend.
+---
 
-### Copyright and attribution
-
-The API aggregates metadata and headlines from third-party publishers. Original content remains the property of the relevant publishers. A public or free API **does not mean that every article is free of copyright restrictions**.
-
-Therefore Abracadabra should:
-
-- display only the headline, publisher, date and original URL;
-
-- keep visible attribution to the source;
-
-- send users to the original article;
-
-- never reproduce the article body, publisher summary or an automatic rewrite;
-
-- never copy third-party images;
-
-- never present publisher content as Abracadabra content;
-
-- show that market information is not financial advice.
-
-For commercial use or large-scale publication, review the [API terms](https://cryptocurrency.cv/terms) again and, where necessary, confirm rights directly with publishers. Attribution alone does not replace an editorial license.
-
-The API also documents usage limits. The frontend makes a small number of requests: market data when the dashboard opens and news only after an asset is selected. Do not add aggressive polling without caching and rate-limit control.
-
-## Backend handoff: information to collect first
-
-> 📄 **Complete Handoff Document:** See [HANDOFF.md](./HANDOFF.md) for complete SQL schemas, Edge Functions specifications, RLS rules, copyright guidance, and acceptance criteria.
->
-> 📌 *Current Decision: The frontend operates completely standalone with the demo test user (`teste123` / `123`), without requiring a database connection at this moment.*
-
-Before replacing the prototype with Supabase or another backend, the backend owner should decide and obtain:
-
-### 1. Authentication
-
-- selected provider: Supabase Auth or another service;
-
-- signup, login, logout and password recovery flows;
-
-- session format and token refresh rules;
-
-- email confirmation requirements;
-
-- private-route access rules;
-
-- migration path from the demo user to real accounts.
-
-### 2. Database
-
-Create and document tables equivalent to:
-
-- `profiles`: user, display name, bio, avatar, focus and preferences;
-
-- `activity_progress`: XP, level, answers, correct answers and streak;
-
-- `activity_attempts`: question, selected choice, correctness, XP and timestamp;
-
-- `question_catalog`: versioned question bank;
-
-- `news_cache`: only allowed metadata and short-lived cache, if the terms allow it;
-
-- `wallet_connections`: public address, network and connection date, never a seed phrase or private key.
-
-Define keys, indexes, timestamps, deletion policy and retention policy as well.
-
-### 3. Security and RLS
-
-- enable Row Level Security;
-
-- allow each user to read and edit only their own profile;
-
-- prevent clients from granting XP directly;
-
-- validate answers, attempts and rewards server-side;
-
-- never store seed phrases or private keys;
-
-- keep service keys in server-side environment variables only;
-
-- add rate limiting and error logs.
-
-### 4. Market and news API
-
-- move `cryptoApi.ts` calls to an Edge Function or server-side API;
-
-- add caching and per-user/IP limits;
-
-- define fallback behavior when the source is unavailable;
-
-- store only permitted fields: title, source, date and URL;
-
-- review each publisher's terms before monetizing or redistributing content;
-
-- validate URLs and prevent injected content from reaching the UI.
-
-### 5. Activities and XP
-
-- decide whether questions stay in code, move to a table or use a CMS;
-
-- version questions and correct answers on the server;
-
-- create an endpoint to start an activity;
-
-- create an endpoint to submit an answer and calculate XP server-side;
-
-- prevent repetition per user using attempt history;
-
-- define difficulty, streak, daily limits and level rules;
-
-- record only the analytics events that are actually needed.
-
-### 6. Wallet and Solana
-
-- choose Wallet Adapter and supported wallets;
-
-- define Devnet/Mainnet per environment;
-
-- verify signatures and transactions server-side;
-
-- confirm RPC, rate limits, confirmations and pending-transaction handling;
-
-- grant achievements only after verifiable on-chain activity;
-
-- define what is stored: public address, signature, network and status.
-
-## Current frontend structure
-
-```
-src/
-├── data/mockNews.ts              # previous demonstration data
-├── lib/activityEngine.ts         # question generation, XP and levels
-├── lib/cryptoApi.ts              # market and external headlines
-├── lib/demoAuth.ts               # local auth and profile persistence
-├── pages/DashboardPage.tsx       # Market, Profile and Activities
-├── main.tsx                      # frontend entry and navigation
-├── styles.css                    # visual system and responsive layout
-└── types.ts                      # domain types
-```
-
-## Run locally
+## 🚀 Running Locally
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/wSales0/abracadabra.git
+cd abracadabra
+
+# 2. Install dependencies
 npm install
+
+# 3. Start local development server
 npm run dev
+
+# 4. Open in your browser:
+# http://localhost:3000
 ```
 
-The project uses Vite, React and TypeScript and can be deployed to Vercel as a static frontend. The current prototype stores login state, profile data, question counter and progress in browser `localStorage`.
+---
 
-## Prototype security notes
+## 👥 Demo Credentials
 
-- Never enter a seed phrase or private key.
+To test the application:
+- **Demo User:** `teste123`
+- **Demo Password:** `123`
+- Or use the **"Continuar com Google"** option on the landing page.
 
-- Do not treat the dashboard as financial advice.
+---
 
-- Client-side XP is not valid proof for production rewards.
+## 📄 License & Disclaimer
 
-- Never publish secret keys in frontend code.
-
-- Do not store third-party article bodies, summaries or images.
-
-## Team
-
-- [wSales0](https://github.com/wSales0)
-
-- [gsoares0017](https://github.com/gsoares0017)
-
-- [001zk](https://github.com/001zk)
-
-- [higomvp](https://github.com/higomvp)
-
-## License
-
-To be defined by the team. External source and publisher licenses are independent from the Abracadabra code license.
+Abracadabra is strictly an **educational project** developed for hackathon demonstration. Market data and news are shown solely for instructional context and do not constitute financial advice.
