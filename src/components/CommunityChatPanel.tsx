@@ -4,30 +4,22 @@ import {
   getChatMessages,
   initCommunityRealtime,
   sendChatMessage,
-  sendCryptoTransferInChat,
 } from '../lib/communityChat'
 
 interface CommunityChatPanelProps {
   user: UserProfile
-  onSaveUser: (changes: Partial<UserProfile>) => void
   onTriggerMission: (missionId: string, msg?: string) => void
 }
 
-export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: CommunityChatPanelProps) {
+export function CommunityChatPanel({ user, onTriggerMission }: CommunityChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => getChatMessages())
   const [inputText, setInputText] = useState('')
   const [realOnlinePeers, setRealOnlinePeers] = useState<OnlineStudent[]>([])
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'offline'>('connecting')
-  const [showTransferModal, setShowTransferModal] = useState(false)
-  const [selectedRecipient, setSelectedRecipient] = useState<OnlineStudent | null>(null)
-  const [transferAmount, setTransferAmount] = useState('0.05')
-  const [transferError, setTransferError] = useState('')
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [copiedShareLink, setCopiedShareLink] = useState(false)
-  const [receivedCryptoToast, setReceivedCryptoToast] = useState<string>('')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const balance = user.practiceBalance ?? 2.5
 
   useEffect(() => {
     // Inicializa comunicação em tempo real global (MQTT + BroadcastChannel)
@@ -41,18 +33,10 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
       onStatusChange: (status) => {
         setConnectionStatus(status)
       },
-      onCryptoReceived: (notice, updatedUser) => {
-        setReceivedCryptoToast(notice)
-        onSaveUser({
-          practiceBalance: updatedUser.practiceBalance,
-          practiceTransactions: updatedUser.practiceTransactions,
-        })
-        setTimeout(() => setReceivedCryptoToast(''), 6000)
-      },
     })
 
     return () => cleanup()
-  }, [user.id, user.displayName, user.practiceBalance, user.avatarUrl])
+  }, [user.id, user.displayName, user.avatarUrl])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -65,54 +49,6 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
     setMessages(updated)
     setInputText('')
     onTriggerMission('mission_community_chat', '🎉 Parabéns! Você interagiu com a comunidade no chat ao vivo!')
-  }
-
-  function handleOpenTransferModal(recipient?: OnlineStudent) {
-    if (recipient) {
-      setSelectedRecipient(recipient)
-    } else if (realOnlinePeers.length > 0) {
-      setSelectedRecipient(realOnlinePeers[0])
-    } else {
-      setSelectedRecipient(null)
-    }
-    setTransferError('')
-    setShowTransferModal(true)
-  }
-
-  function handleSendCrypto() {
-    setTransferError('')
-
-    if (!selectedRecipient) {
-      setTransferError('Nenhum aluno selecionado. É necessário ter outro aluno conectado para enviar.')
-      return
-    }
-
-    const numAmount = parseFloat(transferAmount)
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setTransferError('Digite um valor válido em SOL para enviar.')
-      return
-    }
-
-    if (numAmount + 0.000005 > balance) {
-      setTransferError(`Saldo insuficiente. Você tem ${balance.toFixed(4)} SOL disponível.`)
-      return
-    }
-
-    const res = sendCryptoTransferInChat(user, selectedRecipient, numAmount)
-    if (res.success && res.updatedUser && res.messages) {
-      onSaveUser({
-        practiceBalance: res.updatedUser.practiceBalance,
-        practiceTransactions: res.updatedUser.practiceTransactions,
-      })
-      setMessages(res.messages)
-      setShowTransferModal(false)
-      onTriggerMission(
-        'mission_send_simulation',
-        `🎉 Parabéns! Você transferiu ${numAmount} SOL para ${selectedRecipient.name} ao vivo!`
-      )
-    } else {
-      setTransferError(res.error || 'Não foi possível realizar o envio.')
-    }
   }
 
   function copyAddress(address: string, id: string) {
@@ -141,17 +77,6 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
 
   return (
     <section className="community-chat-panel">
-      {/* Toast flutuante quando recebe cripto ao vivo de outro usuário */}
-      {receivedCryptoToast && (
-        <div className="crypto-received-banner" role="status">
-          <span className="toast-icon">🎁</span>
-          <div>
-            <strong>Transferência On-Chain Recebida!</strong>
-            <p>{receivedCryptoToast}</p>
-          </div>
-        </div>
-      )}
-
       <div className="community-header">
         <div>
           <div className="community-badge-row">
@@ -174,8 +99,8 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
           </div>
           <h1>Comunidade &amp; Chat da Turma</h1>
           <p className="panel-lead">
-            Esta sala conecta os usuários que realmente estão navegando no site agora. Converse em tempo real e transfira
-            moedas de teste (SOL) diretamente pelo chat!
+            Converse em tempo real com outros alunos navegando no site agora. Tire dúvidas, troque ideias e compartilhe
+            experiências sobre Web3!
           </p>
         </div>
       </div>
@@ -207,9 +132,7 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
                   <strong>{user.displayName} (Você)</strong>
                   <span className="you-pill">Você</span>
                 </div>
-                <small className="classmate-role">
-                  {user.level || 'Aprendiz'} · {balance.toFixed(2)} SOL
-                </small>
+                <small className="classmate-role">{user.level || 'Aprendiz'}</small>
                 <div className="classmate-addr-row">
                   <code>
                     {(user.walletAddress || 'DevnetAddress').slice(0, 4)}...
@@ -258,14 +181,6 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
                     </button>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="btn-tip-classmate"
-                  onClick={() => handleOpenTransferModal(student)}
-                  title={`Enviar SOL de teste para ${student.name}`}
-                >
-                  💸 Mandar SOL
-                </button>
               </div>
             ))}
 
@@ -275,8 +190,7 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
                 <span className="no-peers-icon">📡</span>
                 <h4>Você é o único aluno conectado agora</h4>
                 <p>
-                  Não há outros visitantes no momento. Para ver o chat e a transferência de moedas funcionando ao vivo com
-                  outra pessoa real:
+                  Não há outros visitantes no momento. Para testar o chat ao vivo com outra pessoa real:
                 </p>
                 <div className="no-peers-steps">
                   <span>1. Abra o site em outra aba ou janela anônima</span>
@@ -305,24 +219,16 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              className="btn-open-transfer"
-              onClick={() => handleOpenTransferModal()}
-            >
-              🎁 Enviar Cripto no Chat
-            </button>
           </div>
 
           <div className="chat-messages-container">
             {messages.map((msg) => {
               const isMine = msg.senderId === user.id
-              const isTransfer = Boolean(msg.transfer)
 
               return (
                 <div
                   key={msg.id}
-                  className={`chat-message-row ${isMine ? 'mine' : 'theirs'} ${isTransfer ? 'is-transfer' : ''}`}
+                  className={`chat-message-row ${isMine ? 'mine' : 'theirs'}`}
                 >
                   {!isMine && (
                     <img
@@ -338,28 +244,9 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
                       <time className="msg-time">{formatTime(msg.timestamp)}</time>
                     </div>
 
-                    {isTransfer && msg.transfer ? (
-                      <div className="crypto-transfer-card">
-                        <div className="transfer-card-header">
-                          <span className="tx-symbol-badge">⚡ TRANSFERÊNCIA ON-CHAIN</span>
-                          <span className="tx-status-confirmed">🟢 Confirmada</span>
-                        </div>
-                        <div className="transfer-card-amount">
-                          <strong>+{msg.transfer.amount.toFixed(4)} SOL</strong>
-                          <span>para {msg.transfer.recipientName}</span>
-                        </div>
-                        <div className="transfer-card-sig">
-                          <small>Hash da transação:</small>
-                          <code>
-                            {msg.transfer.signature.slice(0, 10)}...{msg.transfer.signature.slice(-8)}
-                          </code>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="msg-bubble">
-                        <p>{msg.text}</p>
-                      </div>
-                    )}
+                    <div className="msg-bubble">
+                      <p>{msg.text}</p>
+                    </div>
                   </div>
                 </div>
               )
@@ -380,107 +267,6 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
           </form>
         </div>
       </div>
-
-      {/* Modal de Envio Rápido de Cripto no Chat */}
-      {showTransferModal && (
-        <div className="modal-backdrop" onClick={() => setShowTransferModal(false)}>
-          <div className="chat-transfer-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>💸 Enviar Moedas de Teste no Chat</h3>
-              <button type="button" className="btn-close-modal" onClick={() => setShowTransferModal(false)}>
-                ✕
-              </button>
-            </div>
-
-            <p className="modal-desc">
-              Envie frações de SOL simulado para outro aluno conectado. A transação aparecerá no chat e o saldo do colega
-              aumentará em tempo real!
-            </p>
-
-            {realOnlinePeers.length === 0 ? (
-              <div className="modal-no-recipients">
-                <p>⚠️ Não há outros alunos conectados no momento para receber.</p>
-                <small>Abra o site em uma segunda aba ou janela anônima para testar a transferência entre duas pessoas!</small>
-              </div>
-            ) : (
-              <label className="modal-field-label">
-                <span>Escolha o Colega Conectado:</span>
-                <select
-                  value={selectedRecipient?.id || ''}
-                  onChange={(e) => {
-                    const found = realOnlinePeers.find((s) => s.id === e.target.value)
-                    if (found) setSelectedRecipient(found)
-                  }}
-                >
-                  {realOnlinePeers.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.role})
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            <label className="modal-field-label">
-              <span>Valor do Envio (SOL):</span>
-              <div className="amount-input-wrap">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={transferAmount}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(',', '.')
-                    if (/^[0-9]*\.?[0-9]*$/.test(val)) {
-                      setTransferAmount(val)
-                    }
-                  }}
-                  placeholder="0.05"
-                />
-                <span className="amount-suffix">SOL</span>
-              </div>
-            </label>
-
-            <div className="quick-transfer-chips">
-              <button type="button" onClick={() => setTransferAmount('0.05')}>
-                0.05 SOL
-              </button>
-              <button type="button" onClick={() => setTransferAmount('0.10')}>
-                0.10 SOL
-              </button>
-              <button type="button" onClick={() => setTransferAmount('0.25')}>
-                0.25 SOL
-              </button>
-            </div>
-
-            <div className="tx-breakdown mini">
-              <div className="breakdown-row">
-                <span>Seu Saldo Atual:</span>
-                <strong>{balance.toFixed(4)} SOL</strong>
-              </div>
-              <div className="breakdown-row">
-                <span>Taxa de Rede (Gas Fee):</span>
-                <span className="fee-value">0.000005 SOL</span>
-              </div>
-            </div>
-
-            {transferError && <p className="modal-error-notice">{transferError}</p>}
-
-            <div className="modal-actions">
-              <button type="button" className="btn-cancel" onClick={() => setShowTransferModal(false)}>
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn-confirm-transfer"
-                disabled={!selectedRecipient || realOnlinePeers.length === 0}
-                onClick={handleSendCrypto}
-              >
-                Confirmar e Enviar no Chat 🚀
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   )
 }

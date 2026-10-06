@@ -142,7 +142,7 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
           <PracticeWalletPanel user={user} onSave={saveProfile} onTriggerMission={triggerMission} />
         )}
         {activeTab === 'community' && (
-          <CommunityChatPanel user={user} onSaveUser={saveProfile} onTriggerMission={triggerMission} />
+          <CommunityChatPanel user={user} onTriggerMission={triggerMission} />
         )}
         {activeTab === 'profile' && (
           <ProfilePanel
@@ -271,7 +271,7 @@ function HomeDashboard({
               </button>
               {' · '}
               <button type="button" className="brief-link-action" onClick={onOpenCommunity}>
-                Chat &amp; Envio para colegas →
+                Chat da Comunidade ao vivo →
               </button>
             </small>
           </div>

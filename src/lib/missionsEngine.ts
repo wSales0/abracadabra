@@ -46,7 +46,7 @@ export const STUDENT_MISSIONS: StudentMission[] = [
     id: 'mission_community_chat',
     title: 'Interagir no Chat da Comunidade',
     shortLabel: 'Troca com a Turma',
-    description: 'Converse com os colegas online ou mande moedas de teste diretamente no bate-papo.',
+    description: 'Converse com os colegas online no chat da comunidade em tempo real.',
     analogy: 'Na Web3, comunidades aprendem juntas tirando dúvidas e trocando experiências em tempo real.',
     xpReward: 35,
     solReward: 0.1,

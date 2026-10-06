@@ -1,5 +1,4 @@
 import type { ChatMessage, OnlineStudent, UserProfile } from '../types'
-import { receivePracticeSol, sendPracticeSol } from './practiceWallet'
 import mqtt, { type MqttClient } from 'mqtt'
 
 const CHAT_STORAGE_KEY = 'abracadabra.community.chat.real.v1'
@@ -7,7 +6,6 @@ const BROADCAST_CHANNEL_NAME = 'abracadabra_real_community_channel'
 
 const TOPIC_CHAT = 'abracadabra/v1/live/chat'
 const TOPIC_PRESENCE = 'abracadabra/v1/live/presence'
-const TOPIC_TRANSFERS = 'abracadabra/v1/live/transfers'
 
 const BROKER_PRIMARY = 'wss://broker.emqx.io:8084/mqtt'
 const BROKER_FALLBACK = 'wss://broker.hivemq.com:8884/mqtt'
@@ -18,7 +16,7 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     senderId: 'system',
     senderName: 'Assistente da Comunidade',
     senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=AbracadabraLive',
-    text: '👋 Olá! Esta é a sala de aula ao vivo da turma Abracadabra. Qualquer pessoa real que estiver navegando no site agora aparecerá na coluna de Alunos Conectados. Conversem, tirem dúvidas e pratiquem transferir moedas de teste entre si!',
+    text: '👋 Olá! Esta é a sala de aula ao vivo da turma Abracadabra. Qualquer pessoa real que estiver navegando no site agora aparecerá na coluna de Alunos Conectados. Conversem, tirem dúvidas e compartilhem aprendizados sobre Web3!',
     timestamp: new Date().toISOString(),
   },
 ]
@@ -55,7 +53,6 @@ export function getChatMessages(): ChatMessage[] {
 
 function saveChatMessagesLocally(messages: ChatMessage[]) {
   if (typeof window !== 'undefined') {
-    // Mantém no máximo 80 mensagens para não poluir o armazenamento
     const sliced = messages.slice(-80)
     localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(sliced))
   }
@@ -64,7 +61,6 @@ function saveChatMessagesLocally(messages: ChatMessage[]) {
 export interface RealtimeChatCallbacks {
   onPresenceUpdate: (peers: OnlineStudent[]) => void
   onMessageReceived: (messages: ChatMessage[]) => void
-  onCryptoReceived?: (notice: string, updatedUser: UserProfile) => void
   onStatusChange?: (status: 'connected' | 'connecting' | 'offline') => void
 }
 
@@ -80,7 +76,6 @@ export function initCommunityRealtime(
 
   callbacks.onStatusChange?.('connecting')
 
-  // Identificador da sessão deste navegador
   const sessionId = `client_${currentUser.id}_${Math.random().toString(36).slice(2, 7)}`
 
   function buildStudentPayload(): OnlineStudent {
@@ -88,7 +83,7 @@ export function initCommunityRealtime(
     return {
       id: currentUser.id,
       name: currentUser.displayName,
-      role: `${currentUser.level || 'Aprendiz Web3'} · ${(currentUser.practiceBalance ?? 2.5).toFixed(2)} SOL`,
+      role: `${currentUser.level || 'Aprendiz Web3'}`,
       avatarUrl: currentUser.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.username}`,
       walletAddress: cleanAddr,
       status: 'online',
@@ -111,12 +106,10 @@ export function initCommunityRealtime(
       timestamp: Date.now(),
     })
 
-    // Envia no MQTT
     if (mqttClient?.connected) {
       mqttClient.publish(TOPIC_PRESENCE, payload)
     }
 
-    // Envia no BroadcastChannel (para outras abas do mesmo computador)
     bChannel?.postMessage({
       type: 'peer_heartbeat',
       sessionId,
@@ -141,7 +134,6 @@ export function initCommunityRealtime(
     })
   }
 
-  // Cria cliente MQTT com fallback de broker
   function connectBroker(brokerUrl: string) {
     if (isCleanedUp) return
 
@@ -157,9 +149,8 @@ export function initCommunityRealtime(
         if (isCleanedUp) return
         callbacks.onStatusChange?.('connected')
 
-        mqttClient?.subscribe([TOPIC_CHAT, TOPIC_PRESENCE, TOPIC_TRANSFERS], (err) => {
+        mqttClient?.subscribe([TOPIC_CHAT, TOPIC_PRESENCE], (err) => {
           if (!err) {
-            // Avisa a todos que chegou e pede presença dos outros
             broadcastHeartbeat()
             mqttClient?.publish(
               TOPIC_PRESENCE,
@@ -178,11 +169,9 @@ export function initCommunityRealtime(
             handlePresenceMessage(data)
           } else if (topic === TOPIC_CHAT) {
             handleChatMessage(data)
-          } else if (topic === TOPIC_TRANSFERS) {
-            handleTransferMessage(data)
           }
         } catch {
-          // ignore corrupted payload
+          // ignore
         }
       })
 
@@ -206,7 +195,6 @@ export function initCommunityRealtime(
     if (!data) return
 
     if (data.type === 'heartbeat' && data.user) {
-      // Ignora se for do mesmo usuário na mesma sessão
       if (data.sessionId === sessionId || data.user.id === currentUser.id) return
 
       const peer: OnlineStudent = {
@@ -237,18 +225,6 @@ export function initCommunityRealtime(
     }
   }
 
-  function handleTransferMessage(data: any) {
-    if (!data) return
-
-    // Se a transferência foi destinada ao usuário desta máquina:
-    if (data.recipientId === currentUser.id && data.amount > 0) {
-      const res = receivePracticeSol(currentUser, data.senderName, data.amount, data.signature)
-      const notice = `🎉 Você acabou de receber +${data.amount.toFixed(4)} SOL de ${data.senderName} ao vivo no chat!`
-      callbacks.onCryptoReceived?.(notice, res.updatedUser)
-    }
-  }
-
-  // Escuta no BroadcastChannel (comunicação instantânea multi-abas)
   const handleBcMessage = (event: MessageEvent) => {
     if (isCleanedUp || !event.data) return
     const msg = event.data
@@ -266,16 +242,12 @@ export function initCommunityRealtime(
 
   bChannel?.addEventListener('message', handleBcMessage)
 
-  // Inicia conexão MQTT
   connectBroker(BROKER_PRIMARY)
 
-  // Dispara heartbeat inicial e a cada 6 segundos
   broadcastHeartbeat()
   presenceTimer = setInterval(broadcastHeartbeat, 6000)
 
-  // Limpa peers inativos há mais de 16 segundos
   pruneTimer = setInterval(() => {
-    // Para simplificar, a cada 18s re-pinga se a lista tiver membros
     if (mqttClient?.connected) {
       mqttClient.publish(
         TOPIC_PRESENCE,
@@ -284,7 +256,6 @@ export function initCommunityRealtime(
     }
   }, 18000)
 
-  // Trata saída do usuário ao fechar a janela
   const handleBeforeUnload = () => {
     broadcastLeave()
   }
@@ -292,7 +263,6 @@ export function initCommunityRealtime(
     window.addEventListener('beforeunload', handleBeforeUnload)
   }
 
-  // Retorna função de limpeza (unsubscribe / disconnect)
   return () => {
     isCleanedUp = true
     clearInterval(presenceTimer)
@@ -328,77 +298,12 @@ export function sendChatMessage(user: UserProfile, text: string): ChatMessage[] 
   const updated = [...current, newMsg]
   saveChatMessagesLocally(updated)
 
-  // Publica no MQTT para todos os outros navegadores no mundo
   if (mqttClient?.connected) {
     mqttClient.publish(TOPIC_CHAT, JSON.stringify(newMsg))
   }
 
-  // Publica no BroadcastChannel para outras abas locais
   const bChannel = getBroadcastChannel()
   bChannel?.postMessage({ type: 'new_chat_msg', chatMessage: newMsg })
 
   return updated
-}
-
-/**
- * Envia moedas (SOL de prática) de um usuário real para outro usuário real
- */
-export function sendCryptoTransferInChat(
-  user: UserProfile,
-  recipient: OnlineStudent,
-  amount: number
-): { success: boolean; error?: string; updatedUser?: UserProfile; messages?: ChatMessage[] } {
-  // Executa o débito da carteira local do remetente
-  const sendRes = sendPracticeSol(user, recipient.walletAddress, amount)
-  if (!sendRes.success || !sendRes.updatedUser || !sendRes.transaction) {
-    return { success: false, error: sendRes.error }
-  }
-
-  const current = getChatMessages()
-  const transferMsg: ChatMessage = {
-    id: `msg-tx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    senderId: user.id,
-    senderName: user.displayName,
-    senderAvatar: user.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`,
-    text: `Transferiu ${amount.toFixed(4)} SOL de teste para ${recipient.name}!`,
-    timestamp: new Date().toISOString(),
-    transfer: {
-      amount,
-      signature: sendRes.transaction.signature,
-      recipientName: recipient.name,
-      recipientAddress: recipient.walletAddress,
-    },
-  }
-
-  const updatedMessages = [...current, transferMsg]
-  saveChatMessagesLocally(updatedMessages)
-
-  const payload = {
-    type: 'crypto_transfer',
-    senderId: user.id,
-    senderName: user.displayName,
-    senderAvatar: user.avatarUrl,
-    senderAddress: user.walletAddress,
-    recipientId: recipient.id,
-    recipientName: recipient.name,
-    recipientAddress: recipient.walletAddress,
-    amount,
-    signature: sendRes.transaction.signature,
-    timestamp: transferMsg.timestamp,
-  }
-
-  // Envia no tópico de transferências e no chat
-  if (mqttClient?.connected) {
-    mqttClient.publish(TOPIC_TRANSFERS, JSON.stringify(payload))
-    mqttClient.publish(TOPIC_CHAT, JSON.stringify(transferMsg))
-  }
-
-  const bChannel = getBroadcastChannel()
-  bChannel?.postMessage({ type: 'new_chat_msg', chatMessage: transferMsg })
-
-  return {
-    success: true,
-    updatedUser: sendRes.updatedUser,
-    messages: updatedMessages,
-  }
 }
