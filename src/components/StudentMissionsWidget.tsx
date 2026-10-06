@@ -3,7 +3,7 @@ import { STUDENT_MISSIONS, type StudentMission } from '../lib/missionsEngine'
 
 interface StudentMissionsWidgetProps {
   completedMissions: string[]
-  onNavigateTab: (tab: 'home' | 'wallet' | 'activities' | 'profile') => void
+  onNavigateTab: (tab: 'home' | 'wallet' | 'community' | 'activities' | 'profile') => void
 }
 
 export function StudentMissionsWidget({ completedMissions, onNavigateTab }: StudentMissionsWidgetProps) {

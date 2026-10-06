@@ -14,6 +14,34 @@ export interface PracticeTransaction {
   fee?: number
 }
 
+export interface ChatTransfer {
+  amount: number
+  signature: string
+  recipientName: string
+  recipientAddress: string
+}
+
+export interface ChatMessage {
+  id: string
+  senderId: string
+  senderName: string
+  senderAvatar?: string
+  text: string
+  timestamp: string
+  transfer?: ChatTransfer
+}
+
+export interface OnlineStudent {
+  id: string
+  name: string
+  role: string
+  avatarUrl?: string
+  walletAddress: string
+  status: 'online' | 'estudando' | 'iniciante'
+  xp: number
+  isCurrentUser?: boolean
+}
+
 export type UserProfile = {
   id: string
   username: string

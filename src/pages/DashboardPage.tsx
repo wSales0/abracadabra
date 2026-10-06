@@ -13,9 +13,10 @@ import { isSpeechSupported, speakText, stopSpeaking } from '../lib/audioVoice'
 import { completeMission, getCompletedMissions } from '../lib/missionsEngine'
 import { StudentMissionsWidget } from '../components/StudentMissionsWidget'
 import { AntiScamSimulator } from '../components/AntiScamSimulator'
+import { CommunityChatPanel } from '../components/CommunityChatPanel'
 import type { ActivityDifficulty, CryptoHeadline, MarketCoin, UserProfile } from '../types'
 
-type DashboardTab = 'home' | 'wallet' | 'profile' | 'activities'
+type DashboardTab = 'home' | 'wallet' | 'community' | 'profile' | 'activities'
 
 type DashboardPageProps = {
   user: UserProfile
@@ -74,6 +75,9 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
           <button className={activeTab === 'wallet' ? 'active' : ''} onClick={() => setActiveTab('wallet')}>
             Carteira Prática
           </button>
+          <button className={activeTab === 'community' ? 'active' : ''} onClick={() => setActiveTab('community')}>
+            Comunidade &amp; Chat <span className="nav-online-pill">4 online</span>
+          </button>
           <button className={activeTab === 'activities' ? 'active' : ''} onClick={() => setActiveTab('activities')}>
             Atividades
           </button>
@@ -127,9 +131,18 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
           onNavigateTab={(tab) => setActiveTab(tab)}
         />
 
-        {activeTab === 'home' && <HomeDashboard user={user} onOpenWallet={() => setActiveTab('wallet')} />}
+        {activeTab === 'home' && (
+          <HomeDashboard
+            user={user}
+            onOpenWallet={() => setActiveTab('wallet')}
+            onOpenCommunity={() => setActiveTab('community')}
+          />
+        )}
         {activeTab === 'wallet' && (
           <PracticeWalletPanel user={user} onSave={saveProfile} onTriggerMission={triggerMission} />
+        )}
+        {activeTab === 'community' && (
+          <CommunityChatPanel user={user} onSaveUser={saveProfile} onTriggerMission={triggerMission} />
         )}
         {activeTab === 'profile' && (
           <ProfilePanel
@@ -149,7 +162,15 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
   )
 }
 
-function HomeDashboard({ user, onOpenWallet }: { user: UserProfile; onOpenWallet: () => void }) {
+function HomeDashboard({
+  user,
+  onOpenWallet,
+  onOpenCommunity,
+}: {
+  user: UserProfile
+  onOpenWallet: () => void
+  onOpenCommunity: () => void
+}) {
   const [coins, setCoins] = useState<MarketCoin[]>([])
   const [selectedCoin, setSelectedCoin] = useState<MarketCoin | null>(null)
   const [headlines, setHeadlines] = useState<CryptoHeadline[]>([])
@@ -198,6 +219,9 @@ function HomeDashboard({ user, onOpenWallet }: { user: UserProfile; onOpenWallet
             <button type="button" className="welcome-wallet-chip" onClick={onOpenWallet}>
               🧪 Carteira de Treino: <strong>{balance.toFixed(2)} SOL</strong> →
             </button>
+            <button type="button" className="welcome-wallet-chip welcome-community-chip" onClick={onOpenCommunity}>
+              💬 Chat da Turma: <strong>4 colegas online</strong> →
+            </button>
           </div>
         </div>
         <div className="market-brief">
@@ -243,7 +267,11 @@ function HomeDashboard({ user, onOpenWallet }: { user: UserProfile; onOpenWallet
             <strong>{balance.toFixed(2)} SOL (Solana Devnet)</strong>
             <small>
               <button type="button" className="brief-link-action" onClick={onOpenWallet}>
-                Acessar torneira (Faucet) e envio →
+                Acessar torneira (Faucet) →
+              </button>
+              {' · '}
+              <button type="button" className="brief-link-action" onClick={onOpenCommunity}>
+                Chat &amp; Envio para colegas →
               </button>
             </small>
           </div>
