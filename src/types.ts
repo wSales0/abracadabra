@@ -32,6 +32,8 @@ export type UserProfile = {
   network?: string
   practiceBalance?: number
   practiceTransactions?: PracticeTransaction[]
+  completedMissions?: string[]
+  fontSize?: 'normal' | 'large' | 'xlarge'
 }
 
 export type CryptoNewsItem = {

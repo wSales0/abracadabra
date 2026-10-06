@@ -9,6 +9,10 @@ import {
   SAMPLE_RECIPIENTS,
   sendPracticeSol,
 } from '../lib/practiceWallet'
+import { isSpeechSupported, speakText, stopSpeaking } from '../lib/audioVoice'
+import { completeMission, getCompletedMissions } from '../lib/missionsEngine'
+import { StudentMissionsWidget } from '../components/StudentMissionsWidget'
+import { AntiScamSimulator } from '../components/AntiScamSimulator'
 import type { ActivityDifficulty, CryptoHeadline, MarketCoin, UserProfile } from '../types'
 
 type DashboardTab = 'home' | 'wallet' | 'profile' | 'activities'
@@ -21,8 +25,14 @@ type DashboardPageProps = {
 export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('home')
   const [user, setUser] = useState(initialUser)
+  const [fontSize, setFontSize] = useState<'normal' | 'large' | 'xlarge'>(() => {
+    return ((typeof window !== 'undefined' && localStorage.getItem('abracadabra.fontSize')) as any) || 'normal'
+  })
+  const [completedMissions, setCompletedMissions] = useState<string[]>(() => getCompletedMissions())
+  const [missionToast, setMissionToast] = useState<string>('')
 
   function logout() {
+    stopSpeaking()
     signOutDemo()
     onLogout()
   }
@@ -32,10 +42,27 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
     if (updatedUser) setUser(updatedUser)
   }
 
+  function toggleFontSize() {
+    const next = fontSize === 'normal' ? 'large' : fontSize === 'large' ? 'xlarge' : 'normal'
+    setFontSize(next)
+    localStorage.setItem('abracadabra.fontSize', next)
+  }
+
+  function triggerMission(missionId: string, customMsg?: string) {
+    const res = completeMission(missionId)
+    if (res.newlyCompleted) {
+      setCompletedMissions(res.completedList)
+      setMissionToast(customMsg || '🎉 Missão concluída com sucesso!')
+      setTimeout(() => setMissionToast(''), 4500)
+    }
+  }
+
   const balance = user.practiceBalance ?? 2.5
 
   return (
-    <main className="dashboard-page">
+    <main
+      className={`dashboard-page ${fontSize === 'large' ? 'font-size-large' : fontSize === 'xlarge' ? 'font-size-xlarge' : ''}`}
+    >
       <header className="dashboard-header">
         <a href="/" className="dashboard-logo-link">
           <img src="/logo-abracadabra.svg" alt="Abracadabra" />
@@ -56,6 +83,17 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
         </nav>
 
         <div className="dashboard-header-right">
+          {/* Botão de acessibilidade / tamanho de letra */}
+          <button
+            type="button"
+            className="accessibility-font-btn"
+            onClick={toggleFontSize}
+            title="Ajustar tamanho da letra para leitura mais confortável (A- / A+)"
+          >
+            <span className="font-symbol">Aa</span>
+            <small>{fontSize === 'normal' ? 'Normal' : fontSize === 'large' ? 'Grande' : 'Muito Grande'}</small>
+          </button>
+
           <button
             type="button"
             className="practice-wallet-badge"
@@ -76,12 +114,36 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
       </header>
 
       <div className="dashboard-content">
-        {activeTab === 'home' && <HomeDashboard user={user} onOpenWallet={() => setActiveTab('wallet')} />}
-        {activeTab === 'wallet' && <PracticeWalletPanel user={user} onSave={saveProfile} />}
-        {activeTab === 'profile' && (
-          <ProfilePanel user={user} onSave={saveProfile} onLogout={logout} onOpenWallet={() => setActiveTab('wallet')} />
+        {missionToast && (
+          <div className="mission-toast-banner" role="status">
+            <span>✨</span>
+            <strong>{missionToast}</strong>
+          </div>
         )}
-        {activeTab === 'activities' && <ActivitiesPanel user={user} onSave={saveProfile} />}
+
+        {/* Trilha de Missões Guiadas do Aluno */}
+        <StudentMissionsWidget
+          completedMissions={completedMissions}
+          onNavigateTab={(tab) => setActiveTab(tab)}
+        />
+
+        {activeTab === 'home' && <HomeDashboard user={user} onOpenWallet={() => setActiveTab('wallet')} />}
+        {activeTab === 'wallet' && (
+          <PracticeWalletPanel user={user} onSave={saveProfile} onTriggerMission={triggerMission} />
+        )}
+        {activeTab === 'profile' && (
+          <ProfilePanel
+            user={user}
+            onSave={saveProfile}
+            onLogout={logout}
+            onOpenWallet={() => setActiveTab('wallet')}
+            fontSize={fontSize}
+            onToggleFontSize={toggleFontSize}
+          />
+        )}
+        {activeTab === 'activities' && (
+          <ActivitiesPanel user={user} onSave={saveProfile} onTriggerMission={triggerMission} />
+        )}
       </div>
     </main>
   )
@@ -302,9 +364,11 @@ function formatTxDate(isoString: string) {
 function PracticeWalletPanel({
   user,
   onSave,
+  onTriggerMission,
 }: {
   user: UserProfile
   onSave: (changes: Partial<UserProfile>) => void
+  onTriggerMission: (missionId: string, msg?: string) => void
 }) {
   const [copied, setCopied] = useState(false)
   const [faucetLoading, setFaucetLoading] = useState(false)
@@ -314,6 +378,7 @@ function PracticeWalletPanel({
   const [transferLoading, setTransferLoading] = useState(false)
   const [transferResult, setTransferResult] = useState<{ success: boolean; msg: string; sig?: string } | null>(null)
   const [resetNotice, setResetNotice] = useState('')
+  const [speakingId, setSpeakingId] = useState<string | null>(null)
 
   const balance = user.practiceBalance ?? 2.5
   const address = user.walletAddress || 'Abr4CadAbRaDevnEtWaLLeT99182374619283741234'
@@ -321,9 +386,27 @@ function PracticeWalletPanel({
   const parsedAmount = parseFloat(amount.replace(',', '.')) || 0
   const maxSendable = Math.max(0, Number((balance - 0.000005).toFixed(6)))
 
+  function toggleSpeech(id: string, text: string) {
+    if (speakingId === id) {
+      stopSpeaking()
+      setSpeakingId(null)
+    } else {
+      stopSpeaking()
+      setSpeakingId(id)
+      speakText(text, {
+        onEnd: () => setSpeakingId(null),
+        onError: () => setSpeakingId(null),
+      })
+    }
+  }
+
   function copyAddress() {
     navigator.clipboard.writeText(address)
     setCopied(true)
+    onTriggerMission(
+      'mission_explore_wallet',
+      '🎉 Missão 1 Concluída: Você conheceu sua Chave Pública (o seu Pix Cripto)!'
+    )
     setTimeout(() => setCopied(false), 2200)
   }
 
@@ -339,6 +422,7 @@ function PracticeWalletPanel({
       })
       setFaucetLoading(false)
       setFaucetNotice(`🎉 +1.00 SOL recebido com sucesso via Devnet Faucet! Hash: ${transaction.signature.slice(0, 12)}...`)
+      onTriggerMission('mission_claim_faucet', '🎉 Missão 2 Concluída: Você pegou moedas na Torneira (Faucet)!')
       setTimeout(() => setFaucetNotice(''), 4500)
     }, 600)
   }
@@ -377,6 +461,7 @@ function PracticeWalletPanel({
         })
         setRecipient('')
         setAmount('')
+        onTriggerMission('mission_send_simulation', '🎉 Missão 3 Concluída: Você fez sua primeira transferência on-chain!')
       } else {
         setTransferResult({
           success: false,
@@ -455,16 +540,159 @@ function PracticeWalletPanel({
 
         <div className="wallet-address-bar">
           <div className="address-info">
-            <span className="address-label">CHAVE PÚBLICA (ENDEREÇO DA SUA CARTEIRA):</span>
+            <span className="address-label">CHAVE PÚBLICA (ENDEREÇO DA SUA CARTEIRA / PIX CRIPTO):</span>
             <code className="address-code">{address}</code>
           </div>
           <button type="button" className="copy-address-btn" onClick={copyAddress} title="Copiar endereço completo">
-            {copied ? '✓ Copiado!' : '📋 Copiar'}
+            {copied ? '✓ Copiado!' : '📋 Copiar Chave'}
           </button>
         </div>
 
         {faucetNotice && <div className="wallet-notice-banner success">{faucetNotice}</div>}
         {resetNotice && <div className="wallet-notice-banner info">{resetNotice}</div>}
+      </div>
+
+      {/* Seção Nova: Tradutor do Cotidiano (Analogias do Mundo Real) */}
+      <div className="analogies-section">
+        <div className="dashboard-section-heading">
+          <div>
+            <p className="dashboard-kicker">TRADUTOR DO COTIDIANO</p>
+            <h2>Entenda Cripto com o que Você Já Usa Todo Dia.</h2>
+          </div>
+          <span className="content-note">Comparações familiares · Clique em Ouvir para escutar</span>
+        </div>
+
+        <div className="analogies-grid">
+          <article className={`analogy-card ${speakingId === 'analogy-pix' ? 'speaking' : ''}`}>
+            <div className="analogy-top">
+              <span className="analogy-icon">🔑</span>
+              <span className="analogy-tag">Como o Pix</span>
+            </div>
+            <h3>Chave Pública = Sua Chave Pix</h3>
+            <p>
+              É o endereço da sua carteira (como seu Pix de e-mail ou CPF). Você pode passar para qualquer pessoa
+              sem medo para receber moedas. Ninguém consegue tirar dinheiro de você apenas sabendo seu endereço.
+            </p>
+            {isSpeechSupported() && (
+              <button
+                type="button"
+                className="btn-speak-analogy"
+                onClick={() =>
+                  toggleSpeech(
+                    'analogy-pix',
+                    'Chave Pública é como a sua Chave Pix. É o endereço da sua carteira. Você pode passar para qualquer pessoa sem medo para receber moedas. Ninguém consegue tirar dinheiro de você apenas sabendo o seu endereço público.'
+                  )
+                }
+              >
+                {speakingId === 'analogy-pix' ? '⏹️ Parar' : '🔊 Ouvir'}
+              </button>
+            )}
+          </article>
+
+          <article className={`analogy-card ${speakingId === 'analogy-senha' ? 'speaking' : ''}`}>
+            <div className="analogy-top">
+              <span className="analogy-icon">🔐</span>
+              <span className="analogy-tag">Como a Senha</span>
+            </div>
+            <h3>Chave Privada = Senha do Cartão</h3>
+            <p>
+              São as suas 12 palavras secretas (ou senha mestra). Quem tem essa chave consegue movimentar seus fundos.
+              Por isso, você <em>NUNCA</em> entrega para ninguém, nem para suporte, amigos ou atendentes.
+            </p>
+            {isSpeechSupported() && (
+              <button
+                type="button"
+                className="btn-speak-analogy"
+                onClick={() =>
+                  toggleSpeech(
+                    'analogy-senha',
+                    'Chave Privada é como a senha de seis dígitos do seu cartão ou a chave do seu cofre. Quem tem essa chave consegue movimentar seu dinheiro. Por isso, você nunca entrega para ninguém, nem para o gerente do banco ou suporte.'
+                  )
+                }
+              >
+                {speakingId === 'analogy-senha' ? '⏹️ Parar' : '🔊 Ouvir'}
+              </button>
+            )}
+          </article>
+
+          <article className={`analogy-card ${speakingId === 'analogy-cartorio' ? 'speaking' : ''}`}>
+            <div className="analogy-top">
+              <span className="analogy-icon">📜</span>
+              <span className="analogy-tag">Como o Cartório</span>
+            </div>
+            <h3>Blockchain = Cartório Digital</h3>
+            <p>
+              Imagine um livro de registros público carimbado por milhares de computadores ao redor do mundo. Depois que uma
+              transferência entra no bloco, é impossível apagar ou falsificar.
+            </p>
+            {isSpeechSupported() && (
+              <button
+                type="button"
+                className="btn-speak-analogy"
+                onClick={() =>
+                  toggleSpeech(
+                    'analogy-cartorio',
+                    'Blockchain é como um cartório comunitário digital. Imagine um livro de registros carimbado por milhares de computadores. Depois que uma transação entra no bloco, ninguém consegue alterar ou apagar o que já foi registrado.'
+                  )
+                }
+              >
+                {speakingId === 'analogy-cartorio' ? '⏹️ Parar' : '🔊 Ouvir'}
+              </button>
+            )}
+          </article>
+
+          <article className={`analogy-card ${speakingId === 'analogy-selo' ? 'speaking' : ''}`}>
+            <div className="analogy-top">
+              <span className="analogy-icon">⛽</span>
+              <span className="analogy-tag">Como o Frete</span>
+            </div>
+            <h3>Gas Fee = Selo dos Correios</h3>
+            <p>
+              Para mandar uma carta, você compra um selo. Na blockchain, para mandar moedas, você paga uma fração minúscula de
+              trocado para os computadores que conferem e transportam sua transação.
+            </p>
+            {isSpeechSupported() && (
+              <button
+                type="button"
+                className="btn-speak-analogy"
+                onClick={() =>
+                  toggleSpeech(
+                    'analogy-selo',
+                    'Gas Fee, ou taxa de rede, é como o selo dos Correios ou a taxa de entrega. É um trocadinho minúsculo pago para quem processa e entrega sua transferência com segurança na rede.'
+                  )
+                }
+              >
+                {speakingId === 'analogy-selo' ? '⏹️ Parar' : '🔊 Ouvir'}
+              </button>
+            )}
+          </article>
+
+          <article className={`analogy-card ${speakingId === 'analogy-maquina' ? 'speaking' : ''}`}>
+            <div className="analogy-top">
+              <span className="analogy-icon">🤖</span>
+              <span className="analogy-tag">Como a Vending Machine</span>
+            </div>
+            <h3>Smart Contract = Máquina de Refrigerante</h3>
+            <p>
+              Um programa que roda sozinho: você insere a moeda, aperta o botão e o refrigerante cai na hora, sem precisar
+              de um atendente humano intermediando a compra.
+            </p>
+            {isSpeechSupported() && (
+              <button
+                type="button"
+                className="btn-speak-analogy"
+                onClick={() =>
+                  toggleSpeech(
+                    'analogy-maquina',
+                    'Contrato Inteligente é como uma máquina de refrigerante automática. Você coloca a moeda, aperta o botão e o refrigerante cai na hora, sem precisar de nenhum intermediário humano para liberar o produto.'
+                  )
+                }
+              >
+                {speakingId === 'analogy-maquina' ? '⏹️ Parar' : '🔊 Ouvir'}
+              </button>
+            )}
+          </article>
+        </div>
       </div>
 
       {/* Grid do Laboratório: Formulário de Envio e Guia Educacional */}
@@ -606,10 +834,24 @@ function PracticeWalletPanel({
           </div>
 
           <div className="edu-tips-list">
-            <article className="edu-tip-card">
+            <article className={`edu-tip-card ${speakingId === 'tip-1' ? 'speaking' : ''}`}>
               <div className="tip-header">
                 <span className="tip-num">01</span>
                 <h4>Chave Pública vs. Chave Privada</h4>
+                {isSpeechSupported() && (
+                  <button
+                    type="button"
+                    className="btn-mini-audio"
+                    onClick={() =>
+                      toggleSpeech(
+                        'tip-1',
+                        'Sua Chave Pública é como a chave Pix. Você pode compartilhar livremente para receber fundos. Já a Chave Privada é a sua assinatura secreta que autoriza pagamentos e ela nunca deve ser compartilhada com ninguém.'
+                      )
+                    }
+                  >
+                    {speakingId === 'tip-1' ? '⏹️' : '🔊'}
+                  </button>
+                )}
               </div>
               <p>
                 Sua <strong>Chave Pública</strong> é o endereço acima (como seu Pix ou número da conta). Você pode
@@ -618,10 +860,24 @@ function PracticeWalletPanel({
               </p>
             </article>
 
-            <article className="edu-tip-card">
+            <article className={`edu-tip-card ${speakingId === 'tip-2' ? 'speaking' : ''}`}>
               <div className="tip-header">
                 <span className="tip-num">02</span>
                 <h4>O que é a Devnet?</h4>
+                {isSpeechSupported() && (
+                  <button
+                    type="button"
+                    className="btn-mini-audio"
+                    onClick={() =>
+                      toggleSpeech(
+                        'tip-2',
+                        'A Solana possui redes de teste, chamadas Devnet e Testnet, com tecnologia idêntica à rede principal, mas com moedas sem valor monetário. É o ambiente perfeito para estudantes praticarem sem risco de perder dinheiro.'
+                      )
+                    }
+                  >
+                    {speakingId === 'tip-2' ? '⏹️' : '🔊'}
+                  </button>
+                )}
               </div>
               <p>
                 A Solana possui redes de teste (Devnet e Testnet) com tecnologia idêntica à rede principal (Mainnet), mas com
@@ -629,10 +885,24 @@ function PracticeWalletPanel({
               </p>
             </article>
 
-            <article className="edu-tip-card">
+            <article className={`edu-tip-card ${speakingId === 'tip-3' ? 'speaking' : ''}`}>
               <div className="tip-header">
                 <span className="tip-num">03</span>
                 <h4>O que é o Faucet?</h4>
+                {isSpeechSupported() && (
+                  <button
+                    type="button"
+                    className="btn-mini-audio"
+                    onClick={() =>
+                      toggleSpeech(
+                        'tip-3',
+                        'Faucet significa torneira. Em redes de teste, são serviços que distribuem frações gratuitas de moedas de teste para quem precisa praticar e aprender.'
+                      )
+                    }
+                  >
+                    {speakingId === 'tip-3' ? '⏹️' : '🔊'}
+                  </button>
+                )}
               </div>
               <p>
                 "Faucet" significa torneira. Em redes de teste Web3, faucets são serviços que distribuem frações gratuitas de
@@ -640,10 +910,24 @@ function PracticeWalletPanel({
               </p>
             </article>
 
-            <article className="edu-tip-card">
+            <article className={`edu-tip-card ${speakingId === 'tip-4' ? 'speaking' : ''}`}>
               <div className="tip-header">
                 <span className="tip-num">04</span>
                 <h4>Taxas de Rede (Gas Fee)</h4>
+                {isSpeechSupported() && (
+                  <button
+                    type="button"
+                    className="btn-mini-audio"
+                    onClick={() =>
+                      toggleSpeech(
+                        'tip-4',
+                        'Na blockchain não existe servidor central. Milhares de computadores validadores processam transações. A taxa de rede recompensa esses computadores por garantirem a segurança do sistema.'
+                      )
+                    }
+                  >
+                    {speakingId === 'tip-4' ? '⏹️' : '🔊'}
+                  </button>
+                )}
               </div>
               <p>
                 Na blockchain não existe servidor central. Milhares de computadores (validadores) processam transações. A taxa
@@ -724,7 +1008,14 @@ function ProfilePanel({
   onSave,
   onLogout,
   onOpenWallet,
-}: DashboardPageProps & { onSave: (changes: Partial<UserProfile>) => void; onOpenWallet: () => void }) {
+  fontSize,
+  onToggleFontSize,
+}: DashboardPageProps & {
+  onSave: (changes: Partial<UserProfile>) => void
+  onOpenWallet: () => void
+  fontSize: 'normal' | 'large' | 'xlarge'
+  onToggleFontSize: () => void
+}) {
   const [displayName, setDisplayName] = useState(user.displayName)
   const [bio, setBio] = useState(user.bio)
   const [focus, setFocus] = useState(user.preferences.focus)
@@ -763,9 +1054,9 @@ function ProfilePanel({
   return (
     <section className="panel-page profile-page">
       <p className="dashboard-kicker">SEU ESPAÇO</p>
-      <h1>Perfil</h1>
+      <h1>Perfil &amp; Preferências</h1>
       <p className="panel-lead">
-        Personalize como você aparece dentro do Abracadabra e gerencie suas credenciais de estudo e carteira.
+        Personalize como você aparece dentro do Abracadabra e configure preferências de acessibilidade e estudo.
       </p>
 
       {/* Card da Carteira de Prática no Perfil */}
@@ -784,7 +1075,7 @@ function ProfilePanel({
 
         <div className="profile-wallet-addr-row">
           <div className="addr-wrap">
-            <small>Chave Pública:</small>
+            <small>Chave Pública (Pix Cripto):</small>
             <code>{address}</code>
           </div>
           <div className="addr-btns">
@@ -796,6 +1087,20 @@ function ProfilePanel({
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Card de Acessibilidade */}
+      <div className="profile-accessibility-box">
+        <div className="accessibility-box-left">
+          <span className="acc-icon">👓</span>
+          <div>
+            <strong>Acessibilidade Visual (Tamanho da Letra)</strong>
+            <p>Ajuste o tamanho das fontes em toda a plataforma para uma leitura mais descansada.</p>
+          </div>
+        </div>
+        <button type="button" className="btn-toggle-font-profile" onClick={onToggleFontSize}>
+          Tamanho Atual: <strong>{fontSize === 'normal' ? 'Normal (100%)' : fontSize === 'large' ? 'Grande (115%)' : 'Muito Grande (130%)'}</strong> (Clique para mudar)
+        </button>
       </div>
 
       <div className="profile-editor">
@@ -855,7 +1160,16 @@ function ProfilePanel({
   )
 }
 
-function ActivitiesPanel({ user, onSave }: { user: UserProfile; onSave: (changes: Partial<UserProfile>) => void }) {
+function ActivitiesPanel({
+  user,
+  onSave,
+  onTriggerMission,
+}: {
+  user: UserProfile
+  onSave: (changes: Partial<UserProfile>) => void
+  onTriggerMission: (missionId: string, msg?: string) => void
+}) {
+  const [activityMode, setActivityMode] = useState<'quiz' | 'antiscam'>('quiz')
   const [difficulty, setDifficulty] = useState<ActivityDifficulty>('iniciante')
   const [question, setQuestion] = useState(() => createQuestion('iniciante'))
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
@@ -888,6 +1202,7 @@ function ActivitiesPanel({ user, onSave }: { user: UserProfile; onSave: (changes
         practiceBalance: updatedUser.practiceBalance,
         practiceTransactions: updatedUser.practiceTransactions,
       })
+      onTriggerMission('mission_answer_quiz', '🎉 Missão 4 Concluída: Você acertou uma questão no Laboratório!')
     } else {
       onSave({
         xp: nextProgress.xp,
@@ -910,11 +1225,11 @@ function ActivitiesPanel({ user, onSave }: { user: UserProfile; onSave: (changes
     <section className="activities-page">
       <div className="activities-heading">
         <div>
-          <p className="dashboard-kicker">LABORATÓRIO DE PRÁTICA</p>
+          <p className="dashboard-kicker">LABORATÓRIO DE PRÁTICA &amp; SEGURANÇA</p>
           <h1>Aprenda fazendo.</h1>
           <p className="panel-lead">
-            Perguntas diferentes a cada rodada, com dificuldade progressiva, ganho de XP e recompensas em SOL simulado para
-            sua carteira de treino.
+            Treine seu raciocínio com perguntas progressivas de Web3 ou pratique o simulador de proteção contra fraudes e
+            golpes da internet.
           </p>
         </div>
         <div className="xp-card">
@@ -923,78 +1238,107 @@ function ActivitiesPanel({ user, onSave }: { user: UserProfile; onSave: (changes
           <small>{xpToNext ? `${xpToNext} XP até o próximo nível` : 'Nível máximo da demo'}</small>
         </div>
       </div>
-      <div className="activity-stats">
-        <div>
-          <span>NÍVEL ATUAL</span>
-          <strong>{level.label}</strong>
-        </div>
-        <div>
-          <span>RESPONDIDAS</span>
-          <strong>{progress.answered}</strong>
-        </div>
-        <div>
-          <span>APROVEITAMENTO</span>
-          <strong>{accuracy}%</strong>
-        </div>
-        <div>
-          <span>SEQUÊNCIA</span>
-          <strong>{user.streak} dia</strong>
-        </div>
+
+      {/* Seletor de Modo: Quiz vs Simulador Anti-Golpe */}
+      <div className="activity-mode-pills">
+        <button
+          type="button"
+          className={`mode-pill-btn ${activityMode === 'quiz' ? 'active' : ''}`}
+          onClick={() => setActivityMode('quiz')}
+        >
+          🧪 Quiz de Conhecimento (+XP &amp; SOL)
+        </button>
+        <button
+          type="button"
+          className={`mode-pill-btn ${activityMode === 'antiscam' ? 'active' : ''}`}
+          onClick={() => setActivityMode('antiscam')}
+        >
+          🛡️ Simulador Anti-Golpe (Cilada ou Seguro?)
+        </button>
       </div>
-      <div className="difficulty-tabs">
-        <span>DIFICULDADE</span>
-        {(['iniciante', 'intermediario', 'avancado'] as ActivityDifficulty[]).map((option) => (
-          <button
-            key={option}
-            className={difficulty === option ? 'active' : ''}
-            onClick={() => changeDifficulty(option)}
-          >
-            {option === 'intermediario' ? 'Intermediário' : option === 'avancado' ? 'Avançado' : 'Iniciante'}
-          </button>
-        ))}
-      </div>
-      <article className="question-card">
-        <div className="question-meta">
-          <span>{question.category}</span>
-          <span className="reward-tag">+{question.xp} XP &amp; +0.05 SOL</span>
-        </div>
-        <p className="question-count">QUESTÃO GERADA · {question.difficulty}</p>
-        <h2>{question.prompt}</h2>
-        <div className="answer-grid">
-          {question.options.map((option, index) => (
-            <button
-              key={option}
-              className={
-                selectedAnswer === null
-                  ? ''
-                  : index === question.answerIndex
-                  ? 'correct'
-                  : index === selectedAnswer
-                  ? 'incorrect'
-                  : 'muted'
-              }
-              onClick={() => answer(index)}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-        {feedback && (
-          <div className={`answer-feedback ${selectedAnswer === question.answerIndex ? 'success' : 'failure'}`}>
-            <strong>
-              {selectedAnswer === question.answerIndex
-                ? `Mandou bem! +${question.xp} XP e +0.05 SOL creditados na sua carteira.`
-                : 'Ainda não.'}
-            </strong>
-            <span>{question.explanation}</span>
-            <button onClick={nextQuestion}>Próxima questão →</button>
+
+      {activityMode === 'antiscam' ? (
+        <AntiScamSimulator
+          onComplete={() => {
+            onTriggerMission('mission_security_test', '🏆 Missão 5 Concluída: Escudo Anti-Golpe conquistado!')
+          }}
+        />
+      ) : (
+        <>
+          <div className="activity-stats">
+            <div>
+              <span>NÍVEL ATUAL</span>
+              <strong>{level.label}</strong>
+            </div>
+            <div>
+              <span>RESPONDIDAS</span>
+              <strong>{progress.answered}</strong>
+            </div>
+            <div>
+              <span>APROVEITAMENTO</span>
+              <strong>{accuracy}%</strong>
+            </div>
+            <div>
+              <span>SEQUÊNCIA</span>
+              <strong>{user.streak} dia</strong>
+            </div>
           </div>
-        )}
-      </article>
-      <p className="activity-footnote">
-        As questões são geradas a partir de combinações de conceitos, cenários e níveis. Cada resposta correta gera uma
-        recompensa Learn &amp; Earn creditada diretamente na sua Carteira de Prática.
-      </p>
+          <div className="difficulty-tabs">
+            <span>DIFICULDADE</span>
+            {(['iniciante', 'intermediario', 'avancado'] as ActivityDifficulty[]).map((option) => (
+              <button
+                key={option}
+                className={difficulty === option ? 'active' : ''}
+                onClick={() => changeDifficulty(option)}
+              >
+                {option === 'intermediario' ? 'Intermediário' : option === 'avancado' ? 'Avançado' : 'Iniciante'}
+              </button>
+            ))}
+          </div>
+          <article className="question-card">
+            <div className="question-meta">
+              <span>{question.category}</span>
+              <span className="reward-tag">+{question.xp} XP &amp; +0.05 SOL</span>
+            </div>
+            <p className="question-count">QUESTÃO GERADA · {question.difficulty}</p>
+            <h2>{question.prompt}</h2>
+            <div className="answer-grid">
+              {question.options.map((option, index) => (
+                <button
+                  key={option}
+                  className={
+                    selectedAnswer === null
+                      ? ''
+                      : index === question.answerIndex
+                      ? 'correct'
+                      : index === selectedAnswer
+                      ? 'incorrect'
+                      : 'muted'
+                  }
+                  onClick={() => answer(index)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            {feedback && (
+              <div className={`answer-feedback ${selectedAnswer === question.answerIndex ? 'success' : 'failure'}`}>
+                <strong>
+                  {selectedAnswer === question.answerIndex
+                    ? `Mandou bem! +${question.xp} XP e +0.05 SOL creditados na sua carteira.`
+                    : 'Ainda não.'}
+                </strong>
+                <span>{question.explanation}</span>
+                <button onClick={nextQuestion}>Próxima questão →</button>
+              </div>
+            )}
+          </article>
+          <p className="activity-footnote">
+            As questões são geradas a partir de combinações de conceitos, cenários e níveis. Cada resposta correta gera uma
+            recompensa Learn &amp; Earn creditada diretamente na sua Carteira de Prática.
+          </p>
+        </>
+      )}
     </section>
   )
 }

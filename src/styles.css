@@ -1597,3 +1597,810 @@ a { color: #9189a7; text-decoration: underline; text-underline-offset: 3px; }
     grid-template-columns: 1fr;
   }
 }
+
+/* ========================================================
+   ACESSIBILIDADE: CONTROLE DE TAMANHO DE FONTE (A- / A+)
+   ======================================================== */
+
+.dashboard-page.font-size-large {
+  font-size: 1.15em;
+}
+.dashboard-page.font-size-large h1 {
+  font-size: clamp(42px, 5.5vw, 68px);
+}
+.dashboard-page.font-size-large h2 {
+  font-size: clamp(32px, 4vw, 48px);
+}
+.dashboard-page.font-size-large p,
+.dashboard-page.font-size-large .panel-lead,
+.dashboard-page.font-size-large .analogy-card p,
+.dashboard-page.font-size-large .edu-tip-card p {
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.dashboard-page.font-size-xlarge {
+  font-size: 1.3em;
+}
+.dashboard-page.font-size-xlarge h1 {
+  font-size: clamp(46px, 6vw, 74px);
+}
+.dashboard-page.font-size-xlarge h2 {
+  font-size: clamp(36px, 4.5vw, 54px);
+}
+.dashboard-page.font-size-xlarge p,
+.dashboard-page.font-size-xlarge .panel-lead,
+.dashboard-page.font-size-xlarge .analogy-card p,
+.dashboard-page.font-size-xlarge .edu-tip-card p {
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.accessibility-font-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 5px 12px;
+  color: #d1cae2;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.accessibility-font-btn:hover {
+  background: rgba(124, 58, 237, 0.2);
+  border-color: rgba(168, 126, 255, 0.45);
+  color: #ffffff;
+}
+.font-symbol {
+  font-weight: 800;
+  font-size: 12px;
+  color: #14f195;
+}
+.accessibility-font-btn small {
+  font-size: 10px;
+  color: #9f97b0;
+  font-family: 'DM Mono', monospace;
+}
+
+/* Toast de conquista de missão */
+.mission-toast-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(110deg, rgba(20, 241, 149, 0.2), rgba(124, 58, 237, 0.25));
+  border: 1px solid rgba(20, 241, 149, 0.5);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  color: #ffffff;
+  font-size: 13px;
+  box-shadow: 0 8px 30px rgba(20, 241, 149, 0.2);
+  animation: slide-in-top 0.4s ease;
+}
+@keyframes slide-in-top {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ========================================================
+   TRILHA DE MISSÕES DO ALUNO (ONBOARDING CHECKLIST)
+   ======================================================== */
+
+.missions-widget {
+  background: linear-gradient(135deg, rgba(25, 20, 48, 0.85) 0%, rgba(14, 13, 26, 0.92) 100%);
+  border: 1px solid rgba(168, 126, 255, 0.3);
+  border-radius: 16px;
+  padding: 22px 26px;
+  margin-bottom: 38px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+.missions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.missions-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.missions-orb {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(124, 58, 237, 0.25);
+  border: 1px solid rgba(168, 126, 255, 0.4);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.missions-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.missions-title-row h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #ffffff;
+}
+.missions-badge-safe {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  background: rgba(20, 241, 149, 0.12);
+  border: 1px solid rgba(20, 241, 149, 0.3);
+  color: #14f195;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.missions-subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #958da3;
+}
+.missions-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.missions-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 170px;
+}
+.missions-progress-text {
+  font-size: 11px;
+  color: #c2bbd3;
+}
+.missions-progress-text strong {
+  color: #14f195;
+}
+.missions-bar-track {
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.missions-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8b5cf6, #14f195);
+  transition: width 0.4s ease;
+}
+.missions-toggle-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #b0a9bd;
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.missions-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+.missions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.mission-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(18, 16, 32, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 12px 18px;
+  transition: all 0.2s;
+}
+.mission-item.done {
+  border-color: rgba(20, 241, 149, 0.25);
+  background: rgba(20, 241, 149, 0.03);
+}
+.mission-item:hover {
+  background: rgba(25, 22, 44, 0.8);
+}
+.mission-status-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.check-done {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #14f195;
+  color: #062013;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 12px;
+}
+.num-pending {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: #a49bb4;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+}
+.mission-info {
+  flex: 1;
+  min-width: 0;
+}
+.mission-title-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mission-title-line h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #ffffff;
+}
+.mission-tag-analogy {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  color: #c4a8ff;
+  background: rgba(124, 58, 237, 0.16);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.mission-info p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #8f889e;
+}
+.mission-analogy-text {
+  display: block;
+  font-size: 11px;
+  color: #14f195;
+  margin-top: 3px;
+}
+.mission-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.mission-reward {
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: #c2b6dc;
+}
+.badge-completed {
+  color: #14f195;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(20, 241, 149, 0.1);
+}
+.btn-start-mission {
+  background: linear-gradient(110deg, #7740dd, #965ef3);
+  border: 1px solid #8c5df1;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-start-mission:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+}
+.all-missions-celebration {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(20, 241, 149, 0.12);
+  border: 1px solid rgba(20, 241, 149, 0.35);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-top: 18px;
+}
+.all-missions-celebration span {
+  font-size: 32px;
+}
+.all-missions-celebration strong {
+  display: block;
+  font-size: 14px;
+  color: #14f195;
+}
+.all-missions-celebration p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #bbf7df;
+}
+
+/* ========================================================
+   TRADUTOR DO COTIDIANO (ANALOGIAS DO MUNDO REAL)
+   ======================================================== */
+
+.analogies-section {
+  margin-bottom: 42px;
+}
+.analogies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+.analogy-card {
+  background: rgba(18, 16, 30, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s;
+  position: relative;
+}
+.analogy-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(168, 126, 255, 0.4);
+  background: rgba(26, 22, 46, 0.8);
+}
+.analogy-card.speaking {
+  border-color: #14f195;
+  box-shadow: 0 0 25px rgba(20, 241, 149, 0.2);
+}
+.analogy-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.analogy-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+.analogy-tag {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  color: #14f195;
+  background: rgba(20, 241, 149, 0.1);
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 241, 149, 0.25);
+}
+.analogy-card h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+.analogy-card p {
+  margin: 10px 0 18px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #928ba1;
+  flex: 1;
+}
+.analogy-card p em {
+  font-style: normal;
+  color: #f080a3;
+  font-weight: 700;
+}
+.btn-speak-analogy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: rgba(124, 58, 237, 0.16);
+  border: 1px solid rgba(168, 126, 255, 0.3);
+  color: #d8c5ff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  align-self: flex-start;
+}
+.btn-speak-analogy:hover {
+  background: rgba(124, 58, 237, 0.35);
+  color: #ffffff;
+}
+.btn-mini-audio {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #beb6d4;
+  border-radius: 6px;
+  padding: 3px 7px;
+  font-size: 11px;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.2s;
+}
+.btn-mini-audio:hover {
+  background: rgba(124, 58, 237, 0.3);
+  color: #fff;
+}
+
+/* ========================================================
+   SIMULADOR ANTI-GOLPE (CILADA OU SEGURO?)
+   ======================================================== */
+
+.activity-mode-pills {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 26px;
+  flex-wrap: wrap;
+}
+.mode-pill-btn {
+  padding: 10px 18px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(18, 16, 30, 0.7);
+  color: #9f96b0;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.mode-pill-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+}
+.mode-pill-btn.active {
+  background: linear-gradient(110deg, #7740dd, #965ef3);
+  border-color: #8c5df1;
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(124, 58, 237, 0.3);
+}
+
+.antiscam-card {
+  background: rgba(18, 16, 30, 0.85);
+  border: 1px solid rgba(168, 126, 255, 0.28);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.35);
+  max-width: 820px;
+}
+.antiscam-top {
+  margin-bottom: 20px;
+}
+.antiscam-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.badge-shield {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  color: #f080a3;
+  background: rgba(240, 128, 163, 0.1);
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 128, 163, 0.25);
+}
+.antiscam-step {
+  font-size: 11px;
+  color: #8c859d;
+  font-family: 'DM Mono', monospace;
+}
+.antiscam-top h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.scenario-bubble-box {
+  background: rgba(10, 9, 18, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 22px;
+}
+.scenario-sender {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.sender-avatar {
+  font-size: 15px;
+}
+.sender-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a8a0b8;
+}
+.scenario-message {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #ede8f7;
+  font-style: italic;
+}
+
+.antiscam-prompt {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 16px;
+}
+.antiscam-choice-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.btn-choice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(22, 20, 36, 0.85);
+  color: #ffffff;
+  transition: all 0.2s;
+}
+.btn-choice:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+.btn-choice.scam:hover:not(:disabled) {
+  border-color: #f080a3;
+  background: rgba(240, 128, 163, 0.12);
+}
+.btn-choice.safe:hover:not(:disabled) {
+  border-color: #14f195;
+  background: rgba(20, 241, 149, 0.12);
+}
+.btn-choice.correct-highlight {
+  border-color: #14f195;
+  background: rgba(20, 241, 149, 0.18);
+  box-shadow: 0 0 20px rgba(20, 241, 149, 0.25);
+}
+.btn-choice.dimmed {
+  opacity: 0.45;
+}
+.choice-icon {
+  font-size: 26px;
+}
+.btn-choice strong {
+  display: block;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+.btn-choice small {
+  display: block;
+  font-size: 11px;
+  color: #8e869c;
+  margin-top: 2px;
+}
+
+.antiscam-feedback {
+  border-radius: 12px;
+  padding: 18px 22px;
+  animation: slide-in-top 0.3s ease;
+}
+.antiscam-feedback.success {
+  background: rgba(20, 241, 149, 0.1);
+  border: 1px solid rgba(20, 241, 149, 0.35);
+  color: #c5f7e4;
+}
+.antiscam-feedback.warning {
+  background: rgba(240, 128, 163, 0.1);
+  border: 1px solid rgba(240, 128, 163, 0.35);
+  color: #fcd0dc;
+}
+.feedback-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.feedback-head strong {
+  font-size: 14px;
+  color: #ffffff;
+}
+.btn-listen-advice {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 5px 11px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.btn-listen-advice:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.feedback-explanation {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.feedback-advice {
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.feedback-advice span {
+  font-weight: 700;
+  color: #ffffff;
+}
+.btn-next-scenario {
+  background: linear-gradient(110deg, #14f195, #00c978);
+  color: #061e12;
+  border: 0;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-next-scenario:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(20, 241, 149, 0.3);
+}
+
+.antiscam-finished-card {
+  background: rgba(18, 16, 30, 0.85);
+  border: 1px solid rgba(20, 241, 149, 0.35);
+  border-radius: 16px;
+  padding: 34px;
+  text-align: center;
+  max-width: 720px;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.4);
+}
+.antiscam-trophy {
+  font-size: 52px;
+  margin-bottom: 12px;
+}
+.antiscam-finished-card h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #ffffff;
+}
+.antiscam-score {
+  font-size: 14px;
+  color: #beb6d2;
+  margin: 8px 0 24px;
+}
+.antiscam-score strong {
+  color: #14f195;
+}
+.antiscam-summary-box {
+  background: rgba(11, 10, 20, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 20px 24px;
+  text-align: left;
+  margin-bottom: 26px;
+}
+.antiscam-summary-box h4 {
+  margin: 0 0 12px;
+  color: #14f195;
+  font-size: 13px;
+}
+.antiscam-summary-box ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12px;
+  color: #d1cae2;
+  line-height: 1.5;
+}
+.btn-restart-antiscam {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-restart-antiscam:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.profile-accessibility-box {
+  background: rgba(18, 16, 32, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.accessibility-box-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.acc-icon {
+  font-size: 24px;
+}
+.accessibility-box-left strong {
+  display: block;
+  font-size: 13px;
+  color: #ffffff;
+}
+.accessibility-box-left p {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #8c859d;
+}
+.btn-toggle-font-profile {
+  background: rgba(124, 58, 237, 0.2);
+  border: 1px solid rgba(168, 126, 255, 0.35);
+  color: #ffffff;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-toggle-font-profile strong {
+  color: #14f195;
+}
+.btn-toggle-font-profile:hover {
+  background: rgba(124, 58, 237, 0.35);
+}
+
+@media (max-width: 650px) {
+  .missions-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .missions-progress-wrap {
+    flex: 1;
+  }
+  .mission-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .mission-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .antiscam-choice-buttons {
+    grid-template-columns: 1fr;
+  }
+}
