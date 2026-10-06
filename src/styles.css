@@ -3144,6 +3144,33 @@ a { color: #9189a7; text-decoration: underline; text-underline-offset: 3px; }
   gap: 8px;
 }
 
+.column-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-sync-presence {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #d1cae2;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 11px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-sync-presence:hover {
+  background: rgba(20, 241, 149, 0.2);
+  border-color: #14f195;
+  color: #14f195;
+  transform: rotate(180deg);
+}
+
 .real-tag {
   font-family: 'DM Mono', monospace;
   font-size: 10px;

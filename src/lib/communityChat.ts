@@ -10,6 +10,10 @@ const TOPIC_PRESENCE = 'abracadabra/v1/live/presence'
 const BROKER_PRIMARY = 'wss://broker.emqx.io:8084/mqtt'
 const BROKER_FALLBACK = 'wss://broker.hivemq.com:8884/mqtt'
 
+const HEARTBEAT_INTERVAL_MS = 2000 // Pulso a cada 2 segundos para resposta ultra-rápida
+const PEER_TIMEOUT_MS = 5000 // Remove colega se passar 5 segundos sem sinal
+const SWEEP_INTERVAL_MS = 1000 // Varredura a cada 1 segundo
+
 const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: 'msg-system-welcome',
@@ -23,9 +27,13 @@ const INITIAL_MESSAGES: ChatMessage[] = [
 
 let mqttClient: MqttClient | null = null
 let broadcastChannel: BroadcastChannel | null = null
-let currentActivePeers = new Map<string, OnlineStudent>()
+const currentActivePeers = new Map<string, OnlineStudent>()
+const peerLastSeen = new Map<string, number>()
+
 let presenceTimer: any = null
-let pruneTimer: any = null
+let sweepTimer: any = null
+let burstTimer1: any = null
+let burstTimer2: any = null
 
 function getBroadcastChannel(): BroadcastChannel | null {
   if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -65,12 +73,12 @@ export interface RealtimeChatCallbacks {
 }
 
 /**
- * Inicia conexão em tempo real MQTT e presença de usuários reais
+ * Inicia conexão em tempo real MQTT e presença ultra-rápida de usuários reais
  */
 export function initCommunityRealtime(
   currentUser: UserProfile,
   callbacks: RealtimeChatCallbacks
-): () => void {
+): { cleanup: () => void; refresh: () => void } {
   const bChannel = getBroadcastChannel()
   let isCleanedUp = false
 
@@ -118,15 +126,36 @@ export function initCommunityRealtime(
     })
   }
 
+  function pingOthers() {
+    if (isCleanedUp) return
+    const payload = JSON.stringify({
+      type: 'ping',
+      sessionId,
+      senderId: currentUser.id,
+    })
+
+    if (mqttClient?.connected) {
+      mqttClient.publish(TOPIC_PRESENCE, payload)
+    }
+
+    bChannel?.postMessage({
+      type: 'peer_ping',
+      sessionId,
+      senderId: currentUser.id,
+    })
+  }
+
   function broadcastLeave() {
     const payload = JSON.stringify({
       type: 'leave',
       sessionId,
       userId: currentUser.id,
     })
+
     if (mqttClient?.connected) {
       mqttClient.publish(TOPIC_PRESENCE, payload)
     }
+
     bChannel?.postMessage({
       type: 'peer_leave',
       sessionId,
@@ -141,8 +170,19 @@ export function initCommunityRealtime(
       mqttClient = mqtt.connect(brokerUrl, {
         clientId: sessionId,
         clean: true,
-        connectTimeout: 5000,
-        reconnectPeriod: 4000,
+        connectTimeout: 4000,
+        reconnectPeriod: 3000,
+        // Last Will and Testament: o servidor broker dispara automaticamente o leave se o navegador fechar ou cair
+        will: {
+          topic: TOPIC_PRESENCE,
+          payload: JSON.stringify({
+            type: 'leave',
+            sessionId,
+            userId: currentUser.id,
+          }),
+          qos: 0,
+          retain: false,
+        },
       })
 
       mqttClient.on('connect', () => {
@@ -152,10 +192,7 @@ export function initCommunityRealtime(
         mqttClient?.subscribe([TOPIC_CHAT, TOPIC_PRESENCE], (err) => {
           if (!err) {
             broadcastHeartbeat()
-            mqttClient?.publish(
-              TOPIC_PRESENCE,
-              JSON.stringify({ type: 'ping', senderId: currentUser.id, sessionId })
-            )
+            pingOthers()
           }
         })
       })
@@ -195,21 +232,25 @@ export function initCommunityRealtime(
     if (!data) return
 
     if (data.type === 'heartbeat' && data.user) {
+      // Ignora eventos gerados por esta mesma sessão
       if (data.sessionId === sessionId || data.user.id === currentUser.id) return
 
       const peer: OnlineStudent = {
         ...data.user,
         isCurrentUser: false,
       }
+
       currentActivePeers.set(data.user.id, peer)
+      peerLastSeen.set(data.user.id, Date.now())
       emitPresence()
     } else if (data.type === 'ping') {
-      if (data.sessionId !== sessionId) {
+      if (data.sessionId !== sessionId && data.senderId !== currentUser.id) {
         broadcastHeartbeat()
       }
     } else if (data.type === 'leave') {
       if (data.userId && data.userId !== currentUser.id) {
         currentActivePeers.delete(data.userId)
+        peerLastSeen.delete(data.userId)
         emitPresence()
       }
     }
@@ -231,9 +272,13 @@ export function initCommunityRealtime(
 
     if (msg.type === 'peer_heartbeat' && msg.user && msg.sessionId !== sessionId) {
       currentActivePeers.set(msg.user.id, msg.user)
+      peerLastSeen.set(msg.user.id, Date.now())
       emitPresence()
+    } else if (msg.type === 'peer_ping' && msg.sessionId !== sessionId) {
+      broadcastHeartbeat()
     } else if (msg.type === 'peer_leave' && msg.userId) {
       currentActivePeers.delete(msg.userId)
+      peerLastSeen.delete(msg.userId)
       emitPresence()
     } else if (msg.type === 'new_chat_msg' && msg.chatMessage) {
       handleChatMessage(msg.chatMessage)
@@ -244,37 +289,85 @@ export function initCommunityRealtime(
 
   connectBroker(BROKER_PRIMARY)
 
+  // Pulso inicial imediato e rajada rápida para descoberta instantânea
   broadcastHeartbeat()
-  presenceTimer = setInterval(broadcastHeartbeat, 6000)
+  pingOthers()
+  burstTimer1 = setTimeout(() => {
+    broadcastHeartbeat()
+    pingOthers()
+  }, 400)
+  burstTimer2 = setTimeout(() => {
+    broadcastHeartbeat()
+    pingOthers()
+  }, 1000)
 
-  pruneTimer = setInterval(() => {
-    if (mqttClient?.connected) {
-      mqttClient.publish(
-        TOPIC_PRESENCE,
-        JSON.stringify({ type: 'ping', senderId: currentUser.id, sessionId })
-      )
+  // Pulso contínuo a cada 2 segundos
+  presenceTimer = setInterval(broadcastHeartbeat, HEARTBEAT_INTERVAL_MS)
+
+  // Varredura de inatividade a cada 1 segundo: remove imediatamente quem passou 5 segundos sem enviar sinal
+  sweepTimer = setInterval(() => {
+    const now = Date.now()
+    let hasChanged = false
+
+    for (const [id, lastTime] of peerLastSeen.entries()) {
+      if (now - lastTime > PEER_TIMEOUT_MS) {
+        currentActivePeers.delete(id)
+        peerLastSeen.delete(id)
+        hasChanged = true
+      }
     }
-  }, 18000)
 
-  const handleBeforeUnload = () => {
+    if (hasChanged) {
+      emitPresence()
+    }
+  }, SWEEP_INTERVAL_MS)
+
+  // Sair rapidamente em pagehide / beforeunload / visibilitychange
+  const handleUnload = () => {
     broadcastLeave()
   }
+
+  const handleVisibility = () => {
+    if (document.visibilityState === 'visible') {
+      broadcastHeartbeat()
+      pingOthers()
+    } else if (document.visibilityState === 'hidden') {
+      // Também avisa ao trocar ou ocultar a aba se necessário
+      broadcastHeartbeat()
+    }
+  }
+
   if (typeof window !== 'undefined') {
-    window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('beforeunload', handleUnload)
+    window.addEventListener('pagehide', handleUnload)
+    document.addEventListener('visibilitychange', handleVisibility)
   }
 
-  return () => {
-    isCleanedUp = true
-    clearInterval(presenceTimer)
-    clearInterval(pruneTimer)
-    broadcastLeave()
-    bChannel?.removeEventListener('message', handleBcMessage)
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-    }
-    mqttClient?.end(true)
-    mqttClient = null
-    currentActivePeers.clear()
+  function manualRefresh() {
+    broadcastHeartbeat()
+    pingOthers()
+  }
+
+  return {
+    refresh: manualRefresh,
+    cleanup: () => {
+      isCleanedUp = true
+      clearInterval(presenceTimer)
+      clearInterval(sweepTimer)
+      clearTimeout(burstTimer1)
+      clearTimeout(burstTimer2)
+      broadcastLeave()
+      bChannel?.removeEventListener('message', handleBcMessage)
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('beforeunload', handleUnload)
+        window.removeEventListener('pagehide', handleUnload)
+        document.removeEventListener('visibilitychange', handleVisibility)
+      }
+      mqttClient?.end(true)
+      mqttClient = null
+      currentActivePeers.clear()
+      peerLastSeen.clear()
+    },
   }
 }
 

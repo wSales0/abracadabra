@@ -20,10 +20,11 @@ export function CommunityChatPanel({ user, onTriggerMission }: CommunityChatPane
   const [copiedShareLink, setCopiedShareLink] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const presenceEngineRef = useRef<{ refresh: () => void; cleanup: () => void } | null>(null)
 
   useEffect(() => {
     // Inicializa comunicação em tempo real global (MQTT + BroadcastChannel)
-    const cleanup = initCommunityRealtime(user, {
+    const instance = initCommunityRealtime(user, {
       onPresenceUpdate: (peers) => {
         setRealOnlinePeers(peers)
       },
@@ -35,7 +36,11 @@ export function CommunityChatPanel({ user, onTriggerMission }: CommunityChatPane
       },
     })
 
-    return () => cleanup()
+    presenceEngineRef.current = instance
+
+    return () => {
+      instance.cleanup()
+    }
   }, [user.id, user.displayName, user.avatarUrl])
 
   useEffect(() => {
@@ -111,7 +116,17 @@ export function CommunityChatPanel({ user, onTriggerMission }: CommunityChatPane
           <div className="column-title-box">
             <div className="column-title-row">
               <h3>Alunos Conectados Agora</h3>
-              <span className="real-tag">100% Real</span>
+              <div className="column-actions-right">
+                <button
+                  type="button"
+                  className="btn-sync-presence"
+                  onClick={() => presenceEngineRef.current?.refresh()}
+                  title="Atualizar presença agora"
+                >
+                  🔄
+                </button>
+                <span className="real-tag">100% Real</span>
+              </div>
             </div>
             <small>Pessoas com o site aberto neste momento</small>
           </div>
