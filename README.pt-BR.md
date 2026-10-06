@@ -1,145 +1,227 @@
 <p align="center">
-  <a href="./README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-7C3AED?style=for-the-badge" /></a>
-  <a href="./README.pt-BR.md"><img alt="Português (BR)" src="https://img.shields.io/badge/lang-Portugu%C3%AAs%20(BR)-14F195?style=for-the-badge&labelColor=09090F" /></a>
-</p>
-
-<p align="center">
+<a href="./README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-7C3AED?style=for-the-badge" /></a>
+  <a href="./README.pt-BR.md"><img alt="Português (BR )" src="https://img.shields.io/badge/lang-Português%20(BR )-14F195?style=for-the-badge&labelColor=09090F" /></a>
+</p> <p align="center">
   <img src="./assets/logo-abracadabra.png" alt="Abracadabra" width="220" />
-</p>
+</p> <h1 align="center">Abracadabra</h1> <p align="center">
+  <strong>Aprenda. Pratique. Interaja. Comprove.</strong>  
 
-<h1 align="center">Abracadabra</h1>
-
-<p align="center">
-  <strong>Aprenda. Pratique. Interaja. Comprove.</strong><br/>
-  Uma plataforma gamificada que leva pessoas de "o que é uma wallet?" até builders on-chain na Solana.
-</p>
-
-<p align="center">
-  <img alt="Status" src="https://img.shields.io/badge/status-em%20estrutura%C3%A7%C3%A3o-7C3AED" />
+  Uma experiência gamificada para aprender Web3 praticando, do primeiro conceito às primeiras decisões on-chain.
+</p> <p align="center">
+  <img alt="Status" src="https://img.shields.io/badge/status-protótipo%20de%20hackathon-7C3AED" />
   <img alt="Rede" src="https://img.shields.io/badge/rede-Solana%20Devnet-14F195" />
   <img alt="Categoria" src="https://img.shields.io/badge/categoria-EdTech-09090F" />
 </p>
 
-> **Status:** projeto em estruturação, criado para o hackathon Superteam Brasil / Colosseum.
-> As seções abaixo descrevem a direção planejada, não funcionalidades prontas.
+> **Status atual:** o frontend já possui landing page, login demonstrativo, dashboard do aluno, perfil editável, mercado cripto, manchetes relacionadas e sistema inicial de atividades com XP. Wallet, backend, autenticação real e ações on-chain ainda não estão integrados.
 
----
+## O produto
 
-## O problema
+A Abracadabra transforma o aprendizado de Web3 em uma jornada prática e progressiva. A pessoa entra, acompanha o mercado, responde perguntas, recebe feedback e acumula XP enquanto constrói uma base de segurança e fundamentos.
 
-A Web3 tem uma curva de aprendizado íngreme. Wallets, transações, contas e programas parecem desconectados quando aprendidos só por documentação e vídeos longos. A maioria dos iniciantes lê sobre blockchain, mas nunca chega a usá-la.
+A experiência atual é um protótipo visual e funcional para hackathon. Ela não deve ser confundida com uma plataforma pronta para produção ou com uma ferramenta de recomendação financeira.
 
-## O que a Abracadabra faz
+## O que já foi implementado
 
-A Abracadabra transforma o ensino de Web3 em uma jornada guiada e prática:
+- Landing page pública e área do aluno separadas.
 
-1. **Diagnosticar.** Um diagnóstico rápido define o nível inicial do usuário.
-2. **Aprender.** Uma trilha personalizada com aulas curtas.
-3. **Praticar.** Quests e desafios interativos.
-4. **Interagir.** O usuário conecta uma wallet e realiza ações reais na Solana Devnet.
-5. **Comprovar.** O app verifica a atividade on-chain, concede XP e desbloqueia conquistas.
+- Login demonstrativo local com `teste123` / `123`.
 
-A Abracadabra está mais para uma jornada guiada do que para um catálogo de cursos: a pessoa aprende Web3 usando, passo a passo.
+- Dashboard com abas de Mercado, Perfil e Atividades.
 
-## Como a Solana é usada
+- Perfil editável com nome, bio, preferências e avatar salvo localmente.
 
-A Solana faz parte do ciclo de aprendizado, e não só do conteúdo:
+- Mercado com preço, variação de 24 horas, ranking e capitalização dos principais ativos.
 
-- O usuário conecta uma wallet (Solana Wallet Adapter).
-- As quests pedem ações reais na Devnet, como receber SOL de teste e enviar a primeira transação.
-- A Abracadabra verifica a atividade pelo endereço e pela assinatura da transação antes de conceder XP.
-- Conquistas (por exemplo, **First Spell**) são desbloqueadas a partir de atividade on-chain verificada.
+- Radar com maior alta, maior queda e líder por valor.
 
-Credenciais on-chain e um programa Anchor próprio estão **planejados**, e não fazem parte do protótipo atual.
+- Manchetes relacionadas carregadas somente quando o aluno seleciona um ativo.
 
-## Exemplo de fluxo (alvo do demo)
+- Atividades com perguntas de conceitos, segurança e raciocínio.
 
-```
-Continue as Test User
-  -> cria username
-  -> diagnóstico de conhecimento (nível inicial)
-  -> dashboard mostra a primeira quest
-  -> aprende sobre wallets e transações
-  -> conecta a wallet
-  -> recebe SOL na Devnet
-  -> envia a primeira transação
-  -> a Abracadabra verifica
-  -> +XP e a conquista "First Spell"
-  -> próxima quest liberada
-```
+- Dificuldades iniciante, intermediário e avançado.
 
-## Tecnologias
+- XP, nível, aproveitamento, questões respondidas e feedback imediato.
 
-| Camada | Tecnologia |
-| --- | --- |
-| Frontend | Next.js, React, TypeScript, Tailwind CSS |
-| Solana | `@solana/web3.js`, Solana Wallet Adapter, Devnet |
-| Programas on-chain | Anchor (planejado, só se necessário) |
-| Persistência (protótipo) | Armazenamento no cliente (`localStorage`) para o Test User |
-| Backend | Deliberadamente em aberto / a definir |
-| Deploy | Vercel |
+- Geração procedural de novas questões com alternativas embaralhadas e identificadores únicos locais.
 
-## Arquitetura
+## Integração de mercado e notícias
+
+O protótipo usa a API pública da [Crypto Vision News / cryptocurrency.cv](https://cryptocurrency.cv/):
 
 ```
-            ABRACADABRA
-                 |
-      +----------+-----------+
-   Frontend                Backend
-  Next.js / TS          (a definir, desacoplado)
-      |
-  Aprendizado | Gamificação | Wallet / Auth
-      |
-  Integração Solana
-      |
-  Wallet | Devnet | Programas (futuro)
+GET https://cryptocurrency.cv/api/market/coins?limit=8
+GET https://cryptocurrency.cv/api/news?category=bitcoin&limit=5
+GET https://cryptocurrency.cv/api/news?search=NomeDaCripto Simbolo&limit=5
 ```
 
-- O frontend é desacoplado de qualquer backend. O armazenamento fica atrás de módulos pequenos (`userStorage`, `progressStorage`, `questStorage`, `achievementStorage`), então a persistência local pode ser trocada por uma API depois sem reescrever a interface.
-- A autenticação está planejada atrás de uma interface `AuthProvider`, com os modos `guest` e `authenticated`.
-- Off-chain: aulas, quizzes, XP, progresso, streaks e catálogo de quests. On-chain: endereço da wallet, transações dos desafios, atividade verificável e conquistas (quando implementadas).
+A integração está em `src/lib/cryptoApi.ts`. Atualmente não há chave de API no frontend.
 
-## Segurança
+### Direitos autorais e atribuição
 
-- O app nunca pede nem armazena seed phrase ou chave privada.
-- As atividades educacionais rodam na Devnet, com fundos de teste.
-- O usuário é avisado claramente sempre que uma transação estiver prestes a ser assinada.
-- Recompensas só devem ser concedidas depois de verificar a transação no servidor ou on-chain, nunca apenas com base em dados enviados pelo cliente.
+A API agrega metadados e manchetes de publishers terceiros. O conteúdo original continua pertencendo aos respectivos publishers. A API ser pública ou gratuita **não significa que todas as matérias sejam livres de direitos autorais**.
 
-## Como começar
+Por isso, o Abracadabra deve:
 
-Repositório: [github.com/wSales0/abracadabra](https://github.com/wSales0/abracadabra)
+- exibir somente título, publisher, data e link original;
 
-O repositório ainda está sendo estruturado. As instruções de instalação serão adicionadas quando a primeira versão do app for commitada.
+- manter atribuição visível à fonte;
 
-## Estrutura sugerida do repositório
+- levar o usuário ao artigo original;
 
-A estrutura pode começar menor que isto.
+- não reproduzir corpo, resumo ou reescrita automática da matéria;
+
+- não copiar imagens de terceiros;
+
+- não apresentar o conteúdo como produzido pelo Abracadabra;
+
+- exibir o aviso de que os dados não constituem recomendação financeira.
+
+Para uso comercial ou publicação em escala, é necessário revisar novamente os [termos da API](https://cryptocurrency.cv/terms) e, quando necessário, confirmar os direitos diretamente com os publishers. A atribuição, sozinha, não substitui uma licença editorial.
+
+A API também informa limites de uso. O frontend faz poucas chamadas: mercado ao abrir o dashboard e notícias apenas quando o usuário seleciona um ativo. Não adicionar polling agressivo sem cache e controle de limites.
+
+## O que a pessoa do backend precisa buscar
+
+Antes de trocar o protótipo por Supabase ou outra API, o responsável pelo backend deve definir e obter:
+
+### 1. Autenticação
+
+- provedor escolhido: Supabase Auth ou outro;
+
+- fluxo de cadastro, login, logout e recuperação de senha;
+
+- formato da sessão e renovação do token;
+
+- confirmação de e-mail, se será obrigatória;
+
+- regras de acesso às rotas privadas;
+
+- migração do usuário demonstrativo para usuários reais.
+
+### 2. Banco de dados
+
+Criar e documentar tabelas equivalentes a:
+
+- `profiles`: usuário, nome, bio, avatar, foco e preferências;
+
+- `activity_progress`: XP, nível, respostas, acertos e sequência;
+
+- `activity_attempts`: questão, alternativa escolhida, acerto, XP e timestamp;
+
+- `question_catalog`: banco de questões versionado;
+
+- `news_cache`: somente metadados permitidos e cache com prazo curto, se os termos permitirem;
+
+- `wallet_connections`: endereço público, rede e data de conexão, sem seed phrase ou chave privada.
+
+Também é necessário definir chaves, índices, timestamps, política de exclusão e retenção.
+
+### 3. Segurança e RLS
+
+- habilitar Row Level Security;
+
+- permitir que o usuário leia e edite somente o próprio perfil;
+
+- impedir que o cliente conceda XP livremente;
+
+- validar respostas, tentativas e recompensas no servidor;
+
+- nunca armazenar seed phrase ou chave privada;
+
+- manter chaves de serviços apenas em variáveis server-side;
+
+- configurar rate limiting e logs de erro.
+
+### 4. API de mercado e notícias
+
+- mover as chamadas de `cryptoApi.ts` para uma Edge Function ou API server-side;
+
+- adicionar cache e limite por usuário/IP;
+
+- definir o comportamento quando a fonte estiver indisponível;
+
+- guardar somente os campos autorizados: título, fonte, data e URL;
+
+- revisar os termos de cada publisher antes de monetizar ou redistribuir;
+
+- validar URLs e impedir conteúdo injetado no frontend.
+
+### 5. Atividades e XP
+
+- decidir se as questões continuarão no código, em tabela ou em CMS;
+
+- versionar questões e respostas corretas no servidor;
+
+- criar endpoint para iniciar uma atividade;
+
+- criar endpoint para enviar resposta e calcular XP server-side;
+
+- impedir repetição por usuário usando histórico de tentativas;
+
+- definir regras de dificuldade, streak, limite diário e níveis;
+
+- registrar eventos para analytics sem armazenar dados desnecessários.
+
+### 6. Wallet e Solana
+
+- escolher Wallet Adapter e wallets suportadas;
+
+- definir Devnet/Mainnet por ambiente;
+
+- validar assinatura e transações no servidor;
+
+- verificar RPC, limites, confirmação e tratamento de transações pendentes;
+
+- conceder conquistas somente após atividade on-chain verificável;
+
+- definir o que será armazenado: endereço público, assinatura, rede e status.
+
+## Estrutura atual do frontend
 
 ```
-abracadabra/
-├── apps/web/          # app Next.js (onboarding, dashboard, learn, quests, achievements, profile)
-├── programs/          # programas Anchor (futuro)
-├── packages/          # tipos e configs compartilhados
-├── content/           # aulas e quests (fundamentals, wallets, solana, development)
-└── README.md
+src/
+├── data/mockNews.ts              # dados antigos de demonstração
+├── lib/activityEngine.ts         # geração de questões, XP e níveis
+├── lib/cryptoApi.ts              # mercado e manchetes externas
+├── lib/demoAuth.ts               # autenticação e perfil locais
+├── pages/DashboardPage.tsx       # Mercado, Perfil e Atividades
+├── main.tsx                      # entrada e navegação do frontend
+├── styles.css                    # identidade visual e responsividade
+└── types.ts                      # tipos de domínio
 ```
 
-## Design
+## Como executar
 
-| Token | Valor |
-| --- | --- |
-| Primária | `#7C3AED` (roxo) |
-| Acento | `#14F195` (verde, inspirado na Solana) |
-| Fundo | `#09090F` |
+```bash
+npm install
+npm run dev
+```
+
+O projeto usa Vite, React e TypeScript e pode ser publicado na Vercel como frontend estático. O protótipo atual persiste login, perfil, contador de questões e progresso no `localStorage` do navegador.
+
+## Segurança do protótipo
+
+- Nunca inserir seed phrase ou chave privada.
+
+- Não tratar o dashboard como recomendação financeira.
+
+- Não considerar o XP salvo no cliente como prova válida para produção.
+
+- Não publicar chaves secretas no frontend.
+
+- Não armazenar corpo, resumo ou imagem de notícias de terceiros.
 
 ## Time
 
 - [wSales0](https://github.com/wSales0)
+
 - [gsoares0017](https://github.com/gsoares0017)
+
 - [001zk](https://github.com/001zk)
+
 - [higomvp](https://github.com/higomvp)
 
 ## Licença
 
-A ser definida pelo time. Esta seção será atualizada quando um arquivo `LICENSE` for adicionado.
+A ser definida pelo time. As licenças das fontes externas e dos publishers são independentes da licença do código do Abracadabra.
