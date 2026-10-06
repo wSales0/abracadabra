@@ -1,76 +1,33 @@
 import type { ChatMessage, OnlineStudent, UserProfile } from '../types'
-import { generateMockSignature, sendPracticeSol } from './practiceWallet'
+import { receivePracticeSol, sendPracticeSol } from './practiceWallet'
+import mqtt, { type MqttClient } from 'mqtt'
 
-const CHAT_STORAGE_KEY = 'abracadabra.community.chat.v1'
-const BROADCAST_CHANNEL_NAME = 'abracadabra_community_channel'
+const CHAT_STORAGE_KEY = 'abracadabra.community.chat.real.v1'
+const BROADCAST_CHANNEL_NAME = 'abracadabra_real_community_channel'
 
-export const CLASSMATE_STUDENTS: OnlineStudent[] = [
-  {
-    id: 'student_ana',
-    name: 'Ana',
-    role: 'Aluna iniciante em Web3 (22 anos)',
-    avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=AnaWeb3',
-    walletAddress: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
-    status: 'online',
-    xp: 140,
-  },
-  {
-    id: 'student_sonia',
-    name: 'Dona Sônia',
-    role: 'Aposentada & Exploradora Digital (67 anos)',
-    avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=SoniaDigital',
-    walletAddress: '3sXNtg2BW87d97TXJSDpbD5jBkheTqA83TZRuJosgAs8',
-    status: 'estudando',
-    xp: 220,
-  },
-  {
-    id: 'student_lucas',
-    name: 'Lucas',
-    role: 'Estudante de Programação (19 anos)',
-    avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=LucasDev',
-    walletAddress: '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM',
-    status: 'online',
-    xp: 380,
-  },
-  {
-    id: 'student_marcos',
-    name: 'Prof. Marcos',
-    role: 'Tutor da Comunidade Web3',
-    avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=ProfMarcos',
-    walletAddress: '4Nd1mBQtrMJVYVfKf2PJy9NZWMdBcD9Gz8LqKsVzT1mB',
-    status: 'online',
-    xp: 950,
-  },
-]
+const TOPIC_CHAT = 'abracadabra/v1/live/chat'
+const TOPIC_PRESENCE = 'abracadabra/v1/live/presence'
+const TOPIC_TRANSFERS = 'abracadabra/v1/live/transfers'
+
+const BROKER_PRIMARY = 'wss://broker.emqx.io:8084/mqtt'
+const BROKER_FALLBACK = 'wss://broker.hivemq.com:8884/mqtt'
 
 const INITIAL_MESSAGES: ChatMessage[] = [
   {
-    id: 'msg-init-1',
-    senderId: 'student_marcos',
-    senderName: 'Prof. Marcos',
-    senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=ProfMarcos',
-    text: 'Olá a todos! Sejam bem-vindos à sala da turma Abracadabra! Aqui vocês podem tirar dúvidas sobre Web3 e praticar transferir SOL de teste entre si.',
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: 'msg-init-2',
-    senderId: 'student_sonia',
-    senderName: 'Dona Sônia',
-    senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=SoniaDigital',
-    text: 'Boa tarde pessoal! Estou adorando o Tradutor do Cotidiano. Finalmente entendi que a Chave Pública é como a nossa Chave Pix!',
-    timestamp: new Date(Date.now() - 1800000).toISOString(),
-  },
-  {
-    id: 'msg-init-3',
-    senderId: 'student_ana',
-    senderName: 'Ana',
-    senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=AnaWeb3',
-    text: 'Oi turma! Quem puder mandar um trocadinho de 0.05 SOL de teste para minha carteira para eu ver como chega a transação, agradeço muito! 🚀',
-    timestamp: new Date(Date.now() - 600000).toISOString(),
+    id: 'msg-system-welcome',
+    senderId: 'system',
+    senderName: 'Assistente da Comunidade',
+    senderAvatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=AbracadabraLive',
+    text: '👋 Olá! Esta é a sala de aula ao vivo da turma Abracadabra. Qualquer pessoa real que estiver navegando no site agora aparecerá na coluna de Alunos Conectados. Conversem, tirem dúvidas e pratiquem transferir moedas de teste entre si!',
+    timestamp: new Date().toISOString(),
   },
 ]
 
+let mqttClient: MqttClient | null = null
 let broadcastChannel: BroadcastChannel | null = null
+let currentActivePeers = new Map<string, OnlineStudent>()
+let presenceTimer: any = null
+let pruneTimer: any = null
 
 function getBroadcastChannel(): BroadcastChannel | null {
   if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -96,53 +53,271 @@ export function getChatMessages(): ChatMessage[] {
   }
 }
 
-function saveChatMessages(messages: ChatMessage[]) {
+function saveChatMessagesLocally(messages: ChatMessage[]) {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages))
-    const channel = getBroadcastChannel()
-    channel?.postMessage({ type: 'sync_messages', messages })
+    // Mantém no máximo 80 mensagens para não poluir o armazenamento
+    const sliced = messages.slice(-80)
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(sliced))
   }
 }
 
-export function subscribeToChat(onNewMessages: (messages: ChatMessage[]) => void): () => void {
-  const channel = getBroadcastChannel()
+export interface RealtimeChatCallbacks {
+  onPresenceUpdate: (peers: OnlineStudent[]) => void
+  onMessageReceived: (messages: ChatMessage[]) => void
+  onCryptoReceived?: (notice: string, updatedUser: UserProfile) => void
+  onStatusChange?: (status: 'connected' | 'connecting' | 'offline') => void
+}
 
-  const handleChannelMsg = (event: MessageEvent) => {
-    if (event.data?.type === 'sync_messages' && Array.isArray(event.data.messages)) {
-      onNewMessages(event.data.messages)
+/**
+ * Inicia conexão em tempo real MQTT e presença de usuários reais
+ */
+export function initCommunityRealtime(
+  currentUser: UserProfile,
+  callbacks: RealtimeChatCallbacks
+): () => void {
+  const bChannel = getBroadcastChannel()
+  let isCleanedUp = false
+
+  callbacks.onStatusChange?.('connecting')
+
+  // Identificador da sessão deste navegador
+  const sessionId = `client_${currentUser.id}_${Math.random().toString(36).slice(2, 7)}`
+
+  function buildStudentPayload(): OnlineStudent {
+    const cleanAddr = currentUser.walletAddress || `Devnet${currentUser.id.slice(0, 10)}`
+    return {
+      id: currentUser.id,
+      name: currentUser.displayName,
+      role: `${currentUser.level || 'Aprendiz Web3'} · ${(currentUser.practiceBalance ?? 2.5).toFixed(2)} SOL`,
+      avatarUrl: currentUser.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.username}`,
+      walletAddress: cleanAddr,
+      status: 'online',
+      xp: currentUser.xp || 100,
+      isCurrentUser: false,
     }
   }
 
-  const handleStorageEvent = (event: StorageEvent) => {
-    if (event.key === CHAT_STORAGE_KEY && event.newValue) {
-      try {
-        onNewMessages(JSON.parse(event.newValue))
-      } catch {
-        // noop
+  function emitPresence() {
+    const list = Array.from(currentActivePeers.values())
+    callbacks.onPresenceUpdate(list)
+  }
+
+  function broadcastHeartbeat() {
+    if (isCleanedUp) return
+    const payload = JSON.stringify({
+      type: 'heartbeat',
+      sessionId,
+      user: buildStudentPayload(),
+      timestamp: Date.now(),
+    })
+
+    // Envia no MQTT
+    if (mqttClient?.connected) {
+      mqttClient.publish(TOPIC_PRESENCE, payload)
+    }
+
+    // Envia no BroadcastChannel (para outras abas do mesmo computador)
+    bChannel?.postMessage({
+      type: 'peer_heartbeat',
+      sessionId,
+      user: buildStudentPayload(),
+      timestamp: Date.now(),
+    })
+  }
+
+  function broadcastLeave() {
+    const payload = JSON.stringify({
+      type: 'leave',
+      sessionId,
+      userId: currentUser.id,
+    })
+    if (mqttClient?.connected) {
+      mqttClient.publish(TOPIC_PRESENCE, payload)
+    }
+    bChannel?.postMessage({
+      type: 'peer_leave',
+      sessionId,
+      userId: currentUser.id,
+    })
+  }
+
+  // Cria cliente MQTT com fallback de broker
+  function connectBroker(brokerUrl: string) {
+    if (isCleanedUp) return
+
+    try {
+      mqttClient = mqtt.connect(brokerUrl, {
+        clientId: sessionId,
+        clean: true,
+        connectTimeout: 5000,
+        reconnectPeriod: 4000,
+      })
+
+      mqttClient.on('connect', () => {
+        if (isCleanedUp) return
+        callbacks.onStatusChange?.('connected')
+
+        mqttClient?.subscribe([TOPIC_CHAT, TOPIC_PRESENCE, TOPIC_TRANSFERS], (err) => {
+          if (!err) {
+            // Avisa a todos que chegou e pede presença dos outros
+            broadcastHeartbeat()
+            mqttClient?.publish(
+              TOPIC_PRESENCE,
+              JSON.stringify({ type: 'ping', senderId: currentUser.id, sessionId })
+            )
+          }
+        })
+      })
+
+      mqttClient.on('message', (topic, raw) => {
+        if (isCleanedUp) return
+        try {
+          const data = JSON.parse(raw.toString())
+
+          if (topic === TOPIC_PRESENCE) {
+            handlePresenceMessage(data)
+          } else if (topic === TOPIC_CHAT) {
+            handleChatMessage(data)
+          } else if (topic === TOPIC_TRANSFERS) {
+            handleTransferMessage(data)
+          }
+        } catch {
+          // ignore corrupted payload
+        }
+      })
+
+      mqttClient.on('error', () => {
+        callbacks.onStatusChange?.('offline')
+        if (brokerUrl === BROKER_PRIMARY && !isCleanedUp) {
+          mqttClient?.end(true)
+          connectBroker(BROKER_FALLBACK)
+        }
+      })
+
+      mqttClient.on('close', () => {
+        callbacks.onStatusChange?.('connecting')
+      })
+    } catch {
+      callbacks.onStatusChange?.('offline')
+    }
+  }
+
+  function handlePresenceMessage(data: any) {
+    if (!data) return
+
+    if (data.type === 'heartbeat' && data.user) {
+      // Ignora se for do mesmo usuário na mesma sessão
+      if (data.sessionId === sessionId || data.user.id === currentUser.id) return
+
+      const peer: OnlineStudent = {
+        ...data.user,
+        isCurrentUser: false,
+      }
+      currentActivePeers.set(data.user.id, peer)
+      emitPresence()
+    } else if (data.type === 'ping') {
+      if (data.sessionId !== sessionId) {
+        broadcastHeartbeat()
+      }
+    } else if (data.type === 'leave') {
+      if (data.userId && data.userId !== currentUser.id) {
+        currentActivePeers.delete(data.userId)
+        emitPresence()
       }
     }
   }
 
-  channel?.addEventListener('message', handleChannelMsg)
-  if (typeof window !== 'undefined') {
-    window.addEventListener('storage', handleStorageEvent)
+  function handleChatMessage(data: any) {
+    if (!data || !data.id) return
+    const currentList = getChatMessages()
+    if (!currentList.some((m) => m.id === data.id)) {
+      const updated = [...currentList, data]
+      saveChatMessagesLocally(updated)
+      callbacks.onMessageReceived(updated)
+    }
   }
 
-  return () => {
-    channel?.removeEventListener('message', handleChannelMsg)
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('storage', handleStorageEvent)
+  function handleTransferMessage(data: any) {
+    if (!data) return
+
+    // Se a transferência foi destinada ao usuário desta máquina:
+    if (data.recipientId === currentUser.id && data.amount > 0) {
+      const res = receivePracticeSol(currentUser, data.senderName, data.amount, data.signature)
+      const notice = `🎉 Você acabou de receber +${data.amount.toFixed(4)} SOL de ${data.senderName} ao vivo no chat!`
+      callbacks.onCryptoReceived?.(notice, res.updatedUser)
     }
+  }
+
+  // Escuta no BroadcastChannel (comunicação instantânea multi-abas)
+  const handleBcMessage = (event: MessageEvent) => {
+    if (isCleanedUp || !event.data) return
+    const msg = event.data
+
+    if (msg.type === 'peer_heartbeat' && msg.user && msg.sessionId !== sessionId) {
+      currentActivePeers.set(msg.user.id, msg.user)
+      emitPresence()
+    } else if (msg.type === 'peer_leave' && msg.userId) {
+      currentActivePeers.delete(msg.userId)
+      emitPresence()
+    } else if (msg.type === 'new_chat_msg' && msg.chatMessage) {
+      handleChatMessage(msg.chatMessage)
+    }
+  }
+
+  bChannel?.addEventListener('message', handleBcMessage)
+
+  // Inicia conexão MQTT
+  connectBroker(BROKER_PRIMARY)
+
+  // Dispara heartbeat inicial e a cada 6 segundos
+  broadcastHeartbeat()
+  presenceTimer = setInterval(broadcastHeartbeat, 6000)
+
+  // Limpa peers inativos há mais de 16 segundos
+  pruneTimer = setInterval(() => {
+    // Para simplificar, a cada 18s re-pinga se a lista tiver membros
+    if (mqttClient?.connected) {
+      mqttClient.publish(
+        TOPIC_PRESENCE,
+        JSON.stringify({ type: 'ping', senderId: currentUser.id, sessionId })
+      )
+    }
+  }, 18000)
+
+  // Trata saída do usuário ao fechar a janela
+  const handleBeforeUnload = () => {
+    broadcastLeave()
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', handleBeforeUnload)
+  }
+
+  // Retorna função de limpeza (unsubscribe / disconnect)
+  return () => {
+    isCleanedUp = true
+    clearInterval(presenceTimer)
+    clearInterval(pruneTimer)
+    broadcastLeave()
+    bChannel?.removeEventListener('message', handleBcMessage)
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+    mqttClient?.end(true)
+    mqttClient = null
+    currentActivePeers.clear()
   }
 }
 
+/**
+ * Envia uma mensagem no chat da comunidade para todos os alunos online
+ */
 export function sendChatMessage(user: UserProfile, text: string): ChatMessage[] {
   const current = getChatMessages()
   const cleanText = text.trim()
   if (!cleanText) return current
 
   const newMsg: ChatMessage = {
-    id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     senderId: user.id,
     senderName: user.displayName,
     senderAvatar: user.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`,
@@ -151,20 +326,29 @@ export function sendChatMessage(user: UserProfile, text: string): ChatMessage[] 
   }
 
   const updated = [...current, newMsg]
-  saveChatMessages(updated)
+  saveChatMessagesLocally(updated)
 
-  // Resposta simulada inteligente e carinhosa de um colega após 1.5 a 3 segundos
-  triggerClassmateReaction(user, cleanText)
+  // Publica no MQTT para todos os outros navegadores no mundo
+  if (mqttClient?.connected) {
+    mqttClient.publish(TOPIC_CHAT, JSON.stringify(newMsg))
+  }
+
+  // Publica no BroadcastChannel para outras abas locais
+  const bChannel = getBroadcastChannel()
+  bChannel?.postMessage({ type: 'new_chat_msg', chatMessage: newMsg })
 
   return updated
 }
 
+/**
+ * Envia moedas (SOL de prática) de um usuário real para outro usuário real
+ */
 export function sendCryptoTransferInChat(
   user: UserProfile,
   recipient: OnlineStudent,
   amount: number
 ): { success: boolean; error?: string; updatedUser?: UserProfile; messages?: ChatMessage[] } {
-  // Executa o envio na carteira de treino do usuário
+  // Executa o débito da carteira local do remetente
   const sendRes = sendPracticeSol(user, recipient.walletAddress, amount)
   if (!sendRes.success || !sendRes.updatedUser || !sendRes.transaction) {
     return { success: false, error: sendRes.error }
@@ -172,7 +356,7 @@ export function sendCryptoTransferInChat(
 
   const current = getChatMessages()
   const transferMsg: ChatMessage = {
-    id: `msg-tx-${Date.now()}`,
+    id: `msg-tx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     senderId: user.id,
     senderName: user.displayName,
     senderAvatar: user.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`,
@@ -187,57 +371,34 @@ export function sendCryptoTransferInChat(
   }
 
   const updatedMessages = [...current, transferMsg]
-  saveChatMessages(updatedMessages)
+  saveChatMessagesLocally(updatedMessages)
 
-  // Resposta automática de agradecimento do colega que recebeu as moedas
-  setTimeout(() => {
-    const afterTransfer = getChatMessages()
-    const reply: ChatMessage = {
-      id: `msg-reply-${Date.now()}`,
-      senderId: recipient.id,
-      senderName: recipient.name,
-      senderAvatar: recipient.avatarUrl,
-      text: `Muito obrigada(o), @${user.displayName.split(' ')[0]}! Os ${amount.toFixed(4)} SOL já caíram certinho na minha carteira de teste! 🟢✨`,
-      timestamp: new Date().toISOString(),
-    }
-    saveChatMessages([...afterTransfer, reply])
-  }, 1800)
+  const payload = {
+    type: 'crypto_transfer',
+    senderId: user.id,
+    senderName: user.displayName,
+    senderAvatar: user.avatarUrl,
+    senderAddress: user.walletAddress,
+    recipientId: recipient.id,
+    recipientName: recipient.name,
+    recipientAddress: recipient.walletAddress,
+    amount,
+    signature: sendRes.transaction.signature,
+    timestamp: transferMsg.timestamp,
+  }
+
+  // Envia no tópico de transferências e no chat
+  if (mqttClient?.connected) {
+    mqttClient.publish(TOPIC_TRANSFERS, JSON.stringify(payload))
+    mqttClient.publish(TOPIC_CHAT, JSON.stringify(transferMsg))
+  }
+
+  const bChannel = getBroadcastChannel()
+  bChannel?.postMessage({ type: 'new_chat_msg', chatMessage: transferMsg })
 
   return {
     success: true,
     updatedUser: sendRes.updatedUser,
     messages: updatedMessages,
-  }
-}
-
-function triggerClassmateReaction(user: UserProfile, text: string) {
-  const lower = text.toLowerCase()
-  let replyText = ''
-  let classmate: OnlineStudent = CLASSMATE_STUDENTS[0] // Ana
-
-  if (lower.includes('ola') || lower.includes('olá') || lower.includes('oi') || lower.includes('boa tarde') || lower.includes('bom dia')) {
-    replyText = `Oi, @${user.displayName.split(' ')[0]}! Muito bom te ver por aqui na turma. O que você está achando dos desafios?`
-    classmate = CLASSMATE_STUDENTS[1] // Dona Sônia
-  } else if (lower.includes('sol') || lower.includes('faucet') || lower.includes('carteira') || lower.includes('pix')) {
-    replyText = `Essa parte da carteira de teste e da Chave Pix Cripto é fantástica! Você já testou enviar alguma moeda de treino pelo chat?`
-    classmate = CLASSMATE_STUDENTS[2] // Lucas
-  } else if (lower.includes('duvida') || lower.includes('dúvida') || lower.includes('ajuda') || lower.includes('como funciona')) {
-    replyText = `Pode mandar sua dúvida aqui, @${user.displayName.split(' ')[0]}! Lembre-se que na Web3 você só compartilha a Chave Pública, a Privada nunca!`
-    classmate = CLASSMATE_STUDENTS[3] // Prof. Marcos
-  }
-
-  if (replyText) {
-    setTimeout(() => {
-      const messages = getChatMessages()
-      const botMsg: ChatMessage = {
-        id: `msg-auto-${Date.now()}`,
-        senderId: classmate.id,
-        senderName: classmate.name,
-        senderAvatar: classmate.avatarUrl,
-        text: replyText,
-        timestamp: new Date().toISOString(),
-      }
-      saveChatMessages([...messages, botMsg])
-    }, 2200)
   }
 }

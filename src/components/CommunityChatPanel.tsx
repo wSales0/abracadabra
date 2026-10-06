@@ -1,11 +1,10 @@
 import { FormEvent, useEffect, useRef, useState } from 'react'
 import type { ChatMessage, OnlineStudent, UserProfile } from '../types'
 import {
-  CLASSMATE_STUDENTS,
   getChatMessages,
+  initCommunityRealtime,
   sendChatMessage,
   sendCryptoTransferInChat,
-  subscribeToChat,
 } from '../lib/communityChat'
 
 interface CommunityChatPanelProps {
@@ -17,22 +16,43 @@ interface CommunityChatPanelProps {
 export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: CommunityChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => getChatMessages())
   const [inputText, setInputText] = useState('')
+  const [realOnlinePeers, setRealOnlinePeers] = useState<OnlineStudent[]>([])
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'offline'>('connecting')
   const [showTransferModal, setShowTransferModal] = useState(false)
-  const [selectedRecipient, setSelectedRecipient] = useState<OnlineStudent>(CLASSMATE_STUDENTS[0])
+  const [selectedRecipient, setSelectedRecipient] = useState<OnlineStudent | null>(null)
   const [transferAmount, setTransferAmount] = useState('0.05')
   const [transferError, setTransferError] = useState('')
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
+  const [copiedShareLink, setCopiedShareLink] = useState(false)
+  const [receivedCryptoToast, setReceivedCryptoToast] = useState<string>('')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const balance = user.practiceBalance ?? 2.5
 
   useEffect(() => {
-    // Sincronização em tempo real entre abas do navegador via BroadcastChannel
-    const unsubscribe = subscribeToChat((updated) => {
-      setMessages(updated)
+    // Inicializa comunicação em tempo real global (MQTT + BroadcastChannel)
+    const cleanup = initCommunityRealtime(user, {
+      onPresenceUpdate: (peers) => {
+        setRealOnlinePeers(peers)
+      },
+      onMessageReceived: (updatedMessages) => {
+        setMessages(updatedMessages)
+      },
+      onStatusChange: (status) => {
+        setConnectionStatus(status)
+      },
+      onCryptoReceived: (notice, updatedUser) => {
+        setReceivedCryptoToast(notice)
+        onSaveUser({
+          practiceBalance: updatedUser.practiceBalance,
+          practiceTransactions: updatedUser.practiceTransactions,
+        })
+        setTimeout(() => setReceivedCryptoToast(''), 6000)
+      },
     })
-    return () => unsubscribe()
-  }, [])
+
+    return () => cleanup()
+  }, [user.id, user.displayName, user.practiceBalance, user.avatarUrl])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -44,10 +64,29 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
     const updated = sendChatMessage(user, inputText)
     setMessages(updated)
     setInputText('')
+    onTriggerMission('mission_community_chat', '🎉 Parabéns! Você interagiu com a comunidade no chat ao vivo!')
+  }
+
+  function handleOpenTransferModal(recipient?: OnlineStudent) {
+    if (recipient) {
+      setSelectedRecipient(recipient)
+    } else if (realOnlinePeers.length > 0) {
+      setSelectedRecipient(realOnlinePeers[0])
+    } else {
+      setSelectedRecipient(null)
+    }
+    setTransferError('')
+    setShowTransferModal(true)
   }
 
   function handleSendCrypto() {
     setTransferError('')
+
+    if (!selectedRecipient) {
+      setTransferError('Nenhum aluno selecionado. É necessário ter outro aluno conectado para enviar.')
+      return
+    }
+
     const numAmount = parseFloat(transferAmount)
     if (isNaN(numAmount) || numAmount <= 0) {
       setTransferError('Digite um valor válido em SOL para enviar.')
@@ -69,7 +108,7 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
       setShowTransferModal(false)
       onTriggerMission(
         'mission_send_simulation',
-        `🎉 Parabéns! Você transferiu ${numAmount} SOL para ${selectedRecipient.name} no chat da comunidade!`
+        `🎉 Parabéns! Você transferiu ${numAmount} SOL para ${selectedRecipient.name} ao vivo!`
       )
     } else {
       setTransferError(res.error || 'Não foi possível realizar o envio.')
@@ -82,6 +121,14 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
     setTimeout(() => setCopiedKey(null), 2000)
   }
 
+  function handleCopyShareLink() {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.origin)
+      setCopiedShareLink(true)
+      setTimeout(() => setCopiedShareLink(false), 2500)
+    }
+  }
+
   function formatTime(isoString: string) {
     try {
       return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(isoString))
@@ -90,32 +137,62 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
     }
   }
 
+  const totalOnlineCount = realOnlinePeers.length + 1
+
   return (
     <section className="community-chat-panel">
+      {/* Toast flutuante quando recebe cripto ao vivo de outro usuário */}
+      {receivedCryptoToast && (
+        <div className="crypto-received-banner" role="status">
+          <span className="toast-icon">🎁</span>
+          <div>
+            <strong>Transferência On-Chain Recebida!</strong>
+            <p>{receivedCryptoToast}</p>
+          </div>
+        </div>
+      )}
+
       <div className="community-header">
         <div>
           <div className="community-badge-row">
-            <span className="live-pulse-dot" />
-            <span className="community-online-count">{CLASSMATE_STUDENTS.length + 1} Alunos Online Agora</span>
-            <span className="community-safe-tag">🛡️ Ambiente Seguro de Prática</span>
+            <span
+              className={`live-pulse-dot ${
+                connectionStatus === 'connected' ? 'connected' : connectionStatus === 'connecting' ? 'connecting' : 'offline'
+              }`}
+            />
+            <span className="community-online-count">
+              {totalOnlineCount} {totalOnlineCount === 1 ? 'Pessoa Real Conectada' : 'Pessoas Reais Conectadas Agora'}
+            </span>
+            <span className="community-network-badge">
+              {connectionStatus === 'connected'
+                ? '🟢 Ao vivo via WebSockets'
+                : connectionStatus === 'connecting'
+                ? '🟡 Conectando à rede...'
+                : '⚪ Modo local'}
+            </span>
+            <span className="community-safe-tag">🛡️ 100% Pessoas Reais</span>
           </div>
           <h1>Comunidade &amp; Chat da Turma</h1>
           <p className="panel-lead">
-            Converse com outros alunos, tire dúvidas e pratique transferir moedas de teste (SOL) diretamente no bate-papo!
+            Esta sala conecta os usuários que realmente estão navegando no site agora. Converse em tempo real e transfira
+            moedas de teste (SOL) diretamente pelo chat!
           </p>
         </div>
       </div>
 
       <div className="community-grid">
-        {/* Coluna da Esquerda: Colegas Conectados */}
+        {/* Coluna da Esquerda: Usuários Reais Conectados */}
         <div className="classmates-column">
           <div className="column-title-box">
-            <h3>Alunos Conectados</h3>
-            <small>Clique para enviar SOL de teste</small>
+            <div className="column-title-row">
+              <h3>Alunos Conectados Agora</h3>
+              <span className="real-tag">100% Real</span>
+            </div>
+            <small>Pessoas com o site aberto neste momento</small>
           </div>
 
           <div className="classmates-list">
-            {/* O próprio aluno */}
+            {/* O próprio usuário logado */}
             <div className="classmate-card is-self">
               <div className="classmate-avatar-wrap">
                 {user.avatarUrl ? (
@@ -128,17 +205,38 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
               <div className="classmate-info">
                 <div className="classmate-name-row">
                   <strong>{user.displayName} (Você)</strong>
+                  <span className="you-pill">Você</span>
                 </div>
-                <small className="classmate-role">Aluno Ativo · {balance.toFixed(2)} SOL</small>
+                <small className="classmate-role">
+                  {user.level || 'Aprendiz'} · {balance.toFixed(2)} SOL
+                </small>
+                <div className="classmate-addr-row">
+                  <code>
+                    {(user.walletAddress || 'DevnetAddress').slice(0, 4)}...
+                    {(user.walletAddress || 'DevnetAddress').slice(-4)}
+                  </code>
+                  <button
+                    type="button"
+                    className="btn-copy-mini"
+                    onClick={() => copyAddress(user.walletAddress || 'DevnetAddress', 'self')}
+                    title="Copiar sua chave pública"
+                  >
+                    {copiedKey === 'self' ? '✓' : '📋'}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Outros colegas de turma */}
-            {CLASSMATE_STUDENTS.map((student) => (
+            {/* Outros usuários reais conectados */}
+            {realOnlinePeers.map((student) => (
               <div key={student.id} className="classmate-card">
                 <div className="classmate-avatar-wrap">
-                  <img src={student.avatarUrl} alt="" className="classmate-avatar" />
-                  <span className={`status-dot ${student.status}`} />
+                  {student.avatarUrl ? (
+                    <img src={student.avatarUrl} alt="" className="classmate-avatar" />
+                  ) : (
+                    <span className="classmate-letter">{student.name.slice(0, 1)}</span>
+                  )}
+                  <span className="status-dot online" />
                 </div>
                 <div className="classmate-info">
                   <div className="classmate-name-row">
@@ -163,16 +261,33 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
                 <button
                   type="button"
                   className="btn-tip-classmate"
-                  onClick={() => {
-                    setSelectedRecipient(student)
-                    setShowTransferModal(true)
-                  }}
+                  onClick={() => handleOpenTransferModal(student)}
                   title={`Enviar SOL de teste para ${student.name}`}
                 >
                   💸 Mandar SOL
                 </button>
               </div>
             ))}
+
+            {/* Aviso quando não há outros colegas reais online */}
+            {realOnlinePeers.length === 0 && (
+              <div className="no-peers-box">
+                <span className="no-peers-icon">📡</span>
+                <h4>Você é o único aluno conectado agora</h4>
+                <p>
+                  Não há outros visitantes no momento. Para ver o chat e a transferência de moedas funcionando ao vivo com
+                  outra pessoa real:
+                </p>
+                <div className="no-peers-steps">
+                  <span>1. Abra o site em outra aba ou janela anônima</span>
+                  <span>2. Ou acesse pelo celular no mesmo link</span>
+                  <span>3. Ou compartilhe com um amigo</span>
+                </div>
+                <button type="button" className="btn-copy-site-link" onClick={handleCopyShareLink}>
+                  {copiedShareLink ? '✓ Link copiado com sucesso!' : '🔗 Copiar Link para Convidar'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -183,13 +298,17 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
               <span className="topic-icon">💬</span>
               <div>
                 <h4>Sala Geral da Turma Web3</h4>
-                <p>Tire dúvidas, mande mensagens e pratique transferir micro-quantias</p>
+                <p>
+                  {totalOnlineCount === 1
+                    ? 'Aguardando outros colegas entrarem na sala...'
+                    : `${totalOnlineCount} participantes online ao vivo`}
+                </p>
               </div>
             </div>
             <button
               type="button"
               className="btn-open-transfer"
-              onClick={() => setShowTransferModal(true)}
+              onClick={() => handleOpenTransferModal()}
             >
               🎁 Enviar Cripto no Chat
             </button>
@@ -201,7 +320,10 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
               const isTransfer = Boolean(msg.transfer)
 
               return (
-                <div key={msg.id} className={`chat-message-row ${isMine ? 'mine' : 'theirs'} ${isTransfer ? 'is-transfer' : ''}`}>
+                <div
+                  key={msg.id}
+                  className={`chat-message-row ${isMine ? 'mine' : 'theirs'} ${isTransfer ? 'is-transfer' : ''}`}
+                >
                   {!isMine && (
                     <img
                       src={msg.senderAvatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=user'}
@@ -248,7 +370,7 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
           <form onSubmit={handleSendMessage} className="chat-input-bar">
             <input
               type="text"
-              placeholder="Digite uma mensagem para a turma..."
+              placeholder="Digite uma mensagem para todos online..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
             />
@@ -271,25 +393,33 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
             </div>
 
             <p className="modal-desc">
-              Envie frações de SOL simulado para um colega. A transferência aparecerá no chat com a hash de validação!
+              Envie frações de SOL simulado para outro aluno conectado. A transação aparecerá no chat e o saldo do colega
+              aumentará em tempo real!
             </p>
 
-            <label className="modal-field-label">
-              <span>Escolha o Colega:</span>
-              <select
-                value={selectedRecipient.id}
-                onChange={(e) => {
-                  const found = CLASSMATE_STUDENTS.find((s) => s.id === e.target.value)
-                  if (found) setSelectedRecipient(found)
-                }}
-              >
-                {CLASSMATE_STUDENTS.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.role})
-                  </option>
-                ))}
-              </select>
-            </label>
+            {realOnlinePeers.length === 0 ? (
+              <div className="modal-no-recipients">
+                <p>⚠️ Não há outros alunos conectados no momento para receber.</p>
+                <small>Abra o site em uma segunda aba ou janela anônima para testar a transferência entre duas pessoas!</small>
+              </div>
+            ) : (
+              <label className="modal-field-label">
+                <span>Escolha o Colega Conectado:</span>
+                <select
+                  value={selectedRecipient?.id || ''}
+                  onChange={(e) => {
+                    const found = realOnlinePeers.find((s) => s.id === e.target.value)
+                    if (found) setSelectedRecipient(found)
+                  }}
+                >
+                  {realOnlinePeers.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.role})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <label className="modal-field-label">
               <span>Valor do Envio (SOL):</span>
@@ -324,7 +454,7 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
 
             <div className="tx-breakdown mini">
               <div className="breakdown-row">
-                <span>Saldo Atual:</span>
+                <span>Seu Saldo Atual:</span>
                 <strong>{balance.toFixed(4)} SOL</strong>
               </div>
               <div className="breakdown-row">
@@ -339,7 +469,12 @@ export function CommunityChatPanel({ user, onSaveUser, onTriggerMission }: Commu
               <button type="button" className="btn-cancel" onClick={() => setShowTransferModal(false)}>
                 Cancelar
               </button>
-              <button type="button" className="btn-confirm-transfer" onClick={handleSendCrypto}>
+              <button
+                type="button"
+                className="btn-confirm-transfer"
+                disabled={!selectedRecipient || realOnlinePeers.length === 0}
+                onClick={handleSendCrypto}
+              >
                 Confirmar e Enviar no Chat 🚀
               </button>
             </div>

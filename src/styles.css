@@ -3114,3 +3114,170 @@ a { color: #9189a7; text-decoration: underline; text-underline-offset: 3px; }
   }
 }
 
+/* Status de Conexão WebSocket / MQTT ao Vivo */
+.live-pulse-dot.connected {
+  background: #14f195;
+  box-shadow: 0 0 10px rgba(20, 241, 149, 0.9);
+}
+.live-pulse-dot.connecting {
+  background: #facc15;
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.8);
+}
+.live-pulse-dot.offline {
+  background: #94a3b8;
+}
+
+.community-network-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: #14f195;
+  background: rgba(20, 241, 149, 0.1);
+  border: 1px solid rgba(20, 241, 149, 0.25);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.column-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.real-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #14f195;
+  background: rgba(20, 241, 149, 0.15);
+  border: 1px solid rgba(20, 241, 149, 0.35);
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.03em;
+}
+
+.you-pill {
+  font-size: 10px;
+  font-weight: 700;
+  color: #0b0718;
+  background: #14f195;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* Card informativo quando apenas o próprio usuário está online */
+.no-peers-box {
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px dashed rgba(168, 126, 255, 0.35);
+  border-radius: 12px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+  align-items: center;
+}
+
+.no-peers-icon {
+  font-size: 28px;
+}
+
+.no-peers-box h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.no-peers-box p {
+  margin: 0;
+  font-size: 12px;
+  color: #b3a9cc;
+  line-height: 1.5;
+}
+
+.no-peers-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #d1cae2;
+}
+
+.btn-copy-site-link {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(153, 69, 255, 0.3));
+  border: 1px solid rgba(168, 126, 255, 0.45);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-copy-site-link:hover {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.5), rgba(153, 69, 255, 0.5));
+  border-color: #14f195;
+  color: #14f195;
+}
+
+/* Banner de Notificação de Cripto Recebida em Tempo Real */
+.crypto-received-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(110deg, rgba(20, 241, 149, 0.25), rgba(124, 58, 237, 0.35));
+  border: 1px solid #14f195;
+  border-radius: 14px;
+  padding: 14px 20px;
+  color: #ffffff;
+  box-shadow: 0 8px 32px rgba(20, 241, 149, 0.25);
+  animation: slide-in-top 0.35s ease;
+}
+
+.crypto-received-banner .toast-icon {
+  font-size: 26px;
+}
+
+.crypto-received-banner strong {
+  display: block;
+  font-size: 14px;
+  color: #14f195;
+}
+
+.crypto-received-banner p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #eae5f5;
+}
+
+.modal-no-recipients {
+  background: rgba(250, 204, 21, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+
+.modal-no-recipients p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #facc15;
+}
+
+.modal-no-recipients small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #d1cae2;
+}
+
+

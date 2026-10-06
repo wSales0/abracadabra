@@ -76,7 +76,7 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
             Carteira Prática
           </button>
           <button className={activeTab === 'community' ? 'active' : ''} onClick={() => setActiveTab('community')}>
-            Comunidade &amp; Chat <span className="nav-online-pill">4 online</span>
+            Comunidade &amp; Chat <span className="nav-online-pill">ao vivo</span>
           </button>
           <button className={activeTab === 'activities' ? 'active' : ''} onClick={() => setActiveTab('activities')}>
             Atividades
@@ -220,7 +220,7 @@ function HomeDashboard({
               🧪 Carteira de Treino: <strong>{balance.toFixed(2)} SOL</strong> →
             </button>
             <button type="button" className="welcome-wallet-chip welcome-community-chip" onClick={onOpenCommunity}>
-              💬 Chat da Turma: <strong>4 colegas online</strong> →
+              💬 Chat da Turma: <strong>ao vivo</strong> →
             </button>
           </div>
         </div>

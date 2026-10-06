@@ -216,3 +216,34 @@ export function resetPracticeWallet(user: UserProfile): UserProfile {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser))
   return updatedUser
 }
+
+export function receivePracticeSol(
+  user: UserProfile,
+  senderName: string,
+  amount: number,
+  signature: string
+): { updatedUser: UserProfile; transaction: PracticeTransaction } {
+  const currentBalance = typeof user.practiceBalance === 'number' ? user.practiceBalance : 2.5
+  const newBalance = Number((currentBalance + amount).toFixed(6))
+
+  const tx: PracticeTransaction = {
+    id: `tx-recv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    type: 'receive',
+    amount,
+    signature,
+    toOrFrom: `Recebido de ${senderName}`,
+    timestamp: new Date().toISOString(),
+    status: 'confirmada',
+    fee: 0,
+  }
+
+  const updatedUser: UserProfile = {
+    ...user,
+    practiceBalance: newBalance,
+    practiceTransactions: [tx, ...(user.practiceTransactions || [])],
+  }
+
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser))
+  return { updatedUser, transaction: tx }
+}
+
