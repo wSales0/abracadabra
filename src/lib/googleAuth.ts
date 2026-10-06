@@ -27,13 +27,17 @@ declare global {
   }
 }
 
+export const DEFAULT_GOOGLE_CLIENT_ID =
+  '1044896716521-7a4kvh5qr7vcb7hbqs8gjhocff2t4hkq.apps.googleusercontent.com'
+
 export function getGoogleClientId(): string {
   const envId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID?.trim()
   if (envId) return envId
   if (typeof window !== 'undefined') {
-    return localStorage.getItem(LOCAL_STORAGE_CLIENT_ID_KEY)?.trim() || ''
+    const localId = localStorage.getItem(LOCAL_STORAGE_CLIENT_ID_KEY)?.trim()
+    if (localId) return localId
   }
-  return ''
+  return DEFAULT_GOOGLE_CLIENT_ID
 }
 
 export function saveLocalGoogleClientId(clientId: string): void {
@@ -84,25 +88,64 @@ export function signInWithGoogleProfile(userInfo: GoogleUserInfo): UserProfile {
   return profile
 }
 
-export function requestOfficialGoogleLogin({
+export async function ensureGoogleScriptLoaded(): Promise<boolean> {
+  if (typeof window === 'undefined') return false
+  if (window.google?.accounts?.oauth2) return true
+
+  return new Promise((resolve) => {
+    let script = document.querySelector('script[src*="accounts.google.com/gsi/client"]') as HTMLScriptElement | null
+    if (!script) {
+      script = document.createElement('script')
+      script.src = 'https://accounts.google.com/gsi/client'
+      script.async = true
+      script.defer = true
+      document.head.appendChild(script)
+    }
+
+    let attempts = 0
+    const checkInterval = setInterval(() => {
+      attempts++
+      if (window.google?.accounts?.oauth2) {
+        clearInterval(checkInterval)
+        resolve(true)
+      } else if (attempts > 30) {
+        clearInterval(checkInterval)
+        resolve(false)
+      }
+    }, 100)
+  })
+}
+
+export async function requestOfficialGoogleLogin({
   onSuccess,
   onError,
 }: {
   onSuccess: (profile: UserProfile) => void
   onError: (error: string) => void
-}): boolean {
+}): Promise<boolean> {
   const clientId = getGoogleClientId()
   if (!clientId) {
+    onError('Configuração do Google Client ID não encontrada.')
     return false
   }
 
-  if (typeof window === 'undefined' || !window.google?.accounts?.oauth2) {
-    onError('A biblioteca do Google ainda está carregando no navegador. Aguarde alguns segundos e tente novamente.')
-    return true
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  // Se a biblioteca do Google ainda não estiver no window, aguarda o carregamento dinâmico
+  if (!window.google?.accounts?.oauth2) {
+    const loaded = await ensureGoogleScriptLoaded()
+    if (!loaded || !window.google?.accounts?.oauth2) {
+      onError('Aguarde alguns segundos para a biblioteca do Google carregar e tente novamente.')
+      return false
+    }
   }
 
   // O Google OAuth proíbe IPs locais de rede como 192.168.x.x e exige http://localhost:PORT
-  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+  // Redireciona APENAS se for um IP privado local. Em produção (Vercel) NÃO redireciona!
+  const isPrivateLocalIp = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(window.location.hostname)
+  if (isPrivateLocalIp) {
     const port = window.location.port ? `:${window.location.port}` : ''
     window.location.href = `http://localhost${port}${window.location.pathname}`
     return true
@@ -144,7 +187,7 @@ export function requestOfficialGoogleLogin({
       },
     })
 
-    // prompt: 'select_account' abre a lista das contas Google conectadas no navegador do usuário!
+    // Abre o popup oficial do Google para o usuário escolher a conta!
     client.requestAccessToken({ prompt: 'select_account' })
     return true
   } catch (err: any) {

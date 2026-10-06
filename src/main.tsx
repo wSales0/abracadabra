@@ -95,13 +95,16 @@ function LoginPage() {
     navigate('/app')
   }
 
-  function handleGoogleLoginClick() {
-    requestOfficialGoogleLogin({
+  async function handleGoogleLoginClick() {
+    setNotice('')
+    await requestOfficialGoogleLogin({
       onSuccess: () => {
         navigate('/app')
       },
-      onError: () => {
-        // Silencioso: ao fechar a tela do Google ou cancelar, não exibe erro nem abre popup!
+      onError: (msg) => {
+        if (msg && !msg.includes('user_cancel') && !msg.includes('closed') && !msg.includes('cancelado')) {
+          setNotice(msg)
+        }
       },
     })
   }
