@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './styles.css'
 import { DashboardPage } from './pages/DashboardPage'
 import { getCurrentUser, signInDemo } from './lib/demoAuth'
+import { requestOfficialGoogleLogin } from './lib/googleAuth'
 
 type IconName = 'spark' | 'arrow' | 'mail' | 'wallet' | 'lock' | 'check' | 'book' | 'flask' | 'bolt' | 'path'
 
@@ -94,6 +95,17 @@ function LoginPage() {
     navigate('/app')
   }
 
+  function handleGoogleLoginClick() {
+    requestOfficialGoogleLogin({
+      onSuccess: () => {
+        navigate('/app')
+      },
+      onError: () => {
+        // Silencioso: ao fechar a tela do Google ou cancelar, não exibe erro nem abre popup!
+      },
+    })
+  }
+
   return (
     <main className="page-shell">
       <div className="ambient ambient-one" />
@@ -106,7 +118,57 @@ function LoginPage() {
         <footer className="brand-footer"><span>Feito para quem quer entender o futuro.</span><span className="footer-dot">•</span><span>Na Solana Devnet</span></footer>
       </section>
       <section className="auth-panel">
-        <div className="auth-card"><div className="auth-topline"><span>ÁREA DO ALUNO</span><span className="topline-line" /></div><div className="auth-heading"><div className="icon-orb"><Icon name="spark" size={18} /></div><p className="auth-kicker">Sua aventura começa aqui</p><h2>Entre para<br /><span>desbloquear.</span></h2><p className="auth-subtitle">Continue sua jornada, acompanhe seu progresso e descubra o universo on-chain.</p></div><div className="auth-actions"><div className="demo-hint">Acesso demonstrativo: <strong>teste123</strong> / <strong>123</strong></div><label className="input-label" htmlFor="username">Usuário</label><div className="input-wrap"><Icon name="mail" size={17} /><input id="username" type="text" placeholder="teste123" value={username} onChange={(event) => { setUsername(event.target.value); setNotice('') }} /></div><label className="input-label password-label" htmlFor="password">Senha</label><div className="input-wrap"><Icon name="lock" size={17} /><input id="password" type="password" placeholder="•••" value={password} onChange={(event) => { setPassword(event.target.value); setNotice('') }} onKeyDown={(event) => event.key === 'Enter' && continueWithLogin()} /><button aria-label="Entrar" onClick={continueWithLogin}><Icon name="arrow" size={17} /></button></div><button className="wallet-button" onClick={() => setNotice('A conexão de wallet estará disponível em breve.')}><Icon name="wallet" size={17} /> Conectar wallet <span>em breve</span></button>{notice && <p className="notice" role="status"><Icon name="check" size={14} /> {notice}</p>}</div><p className="terms">Ao continuar, você concorda com nossos <a href="#termos">Termos de uso</a> e <a href="#privacidade">Política de privacidade</a>.</p><div className="security-note"><Icon name="lock" size={14} /><span>Sem seed phrase. Nunca pediremos sua chave privada.</span></div></div><p className="auth-footer">Ainda não sabe por onde começar? <button onClick={() => navigate('/')}>Voltar para explicação <Icon name="arrow" size={13} /></button></p>
+        <div className="auth-card">
+          <div className="auth-topline"><span>ÁREA DO ALUNO</span><span className="topline-line" /></div>
+          <div className="auth-heading">
+            <div className="icon-orb"><Icon name="spark" size={18} /></div>
+            <p className="auth-kicker">Sua aventura começa aqui</p>
+            <h2>Entre para<br /><span>desbloquear.</span></h2>
+            <p className="auth-subtitle">Continue sua jornada, acompanhe seu progresso e descubra o universo on-chain.</p>
+          </div>
+
+          <div className="auth-actions">
+            {/* Botão Google / Gmail Oficial */}
+            <button
+              type="button"
+              className="google-sign-in-btn"
+              onClick={handleGoogleLoginClick}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z" />
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.36 24 12 24Z" />
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15Z" />
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.36 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98Z" />
+              </svg>
+              <span>Continuar com Google</span>
+            </button>
+
+            <div className="divider">
+              <span>OU ACESSO COM USUÁRIO</span>
+            </div>
+
+            <div className="demo-hint">Acesso de teste: <strong>teste123</strong> / <strong>123</strong></div>
+
+            <label className="input-label" htmlFor="username">Usuário</label>
+            <div className="input-wrap">
+              <Icon name="mail" size={17} />
+              <input id="username" type="text" placeholder="teste123" value={username} onChange={(event) => { setUsername(event.target.value); setNotice('') }} />
+            </div>
+
+            <label className="input-label password-label" htmlFor="password">Senha</label>
+            <div className="input-wrap">
+              <Icon name="lock" size={17} />
+              <input id="password" type="password" placeholder="•••" value={password} onChange={(event) => { setPassword(event.target.value); setNotice('') }} onKeyDown={(event) => event.key === 'Enter' && continueWithLogin()} />
+              <button aria-label="Entrar" onClick={continueWithLogin}><Icon name="arrow" size={17} /></button>
+            </div>
+
+            {notice && <p className="notice" role="status"><Icon name="check" size={14} /> {notice}</p>}
+          </div>
+
+          <p className="terms">Ao continuar, você concorda com nossos <a href="#termos">Termos de uso</a> e <a href="#privacidade">Política de privacidade</a>.</p>
+          <div className="security-note"><Icon name="lock" size={14} /><span>Sem seed phrase. Nunca pediremos sua chave privada.</span></div>
+        </div>
+        <p className="auth-footer">Ainda não sabe por onde começar? <button onClick={() => navigate('/')}>Voltar para explicação <Icon name="arrow" size={13} /></button></p>
       </section>
     </main>
   )

@@ -1,4 +1,5 @@
 import type { UserProfile } from '../types'
+import { ensurePracticeWallet } from './practiceWallet'
 
 const DEMO_USERNAME = 'teste123'
 const DEMO_PASSWORD = '123'
@@ -18,18 +19,24 @@ export const demoUser: UserProfile = {
     focus: 'Fundamentos de Web3',
     weeklyDigest: true,
   },
+  walletAddress: 'Abr4CadAbRaDevnEtWaLLeT99182374619283741234',
+  walletProvider: 'Carteira de Prática (Solana Devnet)',
+  network: 'Solana Devnet (Simulada)',
+  practiceBalance: 2.5,
 }
 
 export function signInDemo(username: string, password: string) {
   if (username.trim() !== DEMO_USERNAME || password !== DEMO_PASSWORD) return false
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify(demoUser))
+  const initialized = ensurePracticeWallet({ ...demoUser })
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(initialized))
   return true
 }
 
 export function getCurrentUser(): UserProfile | null {
   const storedUser = sessionStorage.getItem(SESSION_KEY)
   if (!storedUser) return null
-  return { ...demoUser, ...JSON.parse(storedUser) as Partial<UserProfile> }
+  const parsed = { ...demoUser, ...JSON.parse(storedUser) as Partial<UserProfile> }
+  return ensurePracticeWallet(parsed)
 }
 
 export function updateCurrentUser(changes: Partial<UserProfile>) {

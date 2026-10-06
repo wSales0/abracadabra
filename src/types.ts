@@ -3,6 +3,17 @@ export type UserPreferences = {
   weeklyDigest: boolean
 }
 
+export interface PracticeTransaction {
+  id: string
+  type: 'faucet' | 'send' | 'receive' | 'reward'
+  amount: number
+  signature: string
+  toOrFrom: string
+  timestamp: string
+  status: 'confirmada' | 'processando'
+  fee?: number
+}
+
 export type UserProfile = {
   id: string
   username: string
@@ -14,6 +25,13 @@ export type UserProfile = {
   xp: number
   completedActivities: number
   preferences: UserPreferences
+  email?: string
+  authProvider?: string
+  walletAddress?: string
+  walletProvider?: string
+  network?: string
+  practiceBalance?: number
+  practiceTransactions?: PracticeTransaction[]
 }
 
 export type CryptoNewsItem = {

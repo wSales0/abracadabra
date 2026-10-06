@@ -83,6 +83,10 @@ The API also documents usage limits. The frontend makes a small number of reques
 
 ## Backend handoff: information to collect first
 
+> 📄 **Complete Handoff Document:** See [HANDOFF.md](./HANDOFF.md) for complete SQL schemas, Edge Functions specifications, RLS rules, copyright guidance, and acceptance criteria.
+>
+> 📌 *Current Decision: The frontend operates completely standalone with the demo test user (`teste123` / `123`), without requiring a database connection at this moment.*
+
 Before replacing the prototype with Supabase or another backend, the backend owner should decide and obtain:
 
 ### 1. Authentication

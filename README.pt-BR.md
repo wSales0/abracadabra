@@ -83,6 +83,10 @@ A API também informa limites de uso. O frontend faz poucas chamadas: mercado ao
 
 ## O que a pessoa do backend precisa buscar
 
+> 📄 **Documento Completo de Handoff:** Consulte [HANDOFF.pt-BR.md](./HANDOFF.pt-BR.md) para detalhes completos de schema SQL, Edge Functions, RLS, direitos autorais e critérios de aceite.
+>
+> 📌 *Decisão atual: O frontend continua operando 100% independente com o usuário demonstrativo (`teste123` / `123`), sem necessidade de banco de dados neste momento.*
+
 Antes de trocar o protótipo por Supabase ou outra API, o responsável pelo backend deve definir e obter:
 
 ### 1. Autenticação
