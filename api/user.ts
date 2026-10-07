@@ -99,6 +99,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json(peers)
       }
 
+      if (action === 'leaderboard') {
+        const topDocs = await usersCol
+          .find({
+            $or: [
+              { xp: { $exists: true } },
+              { displayName: { $exists: true } },
+              { username: { $exists: true } },
+            ],
+          })
+          .sort({ xp: -1 })
+          .limit(20)
+          .toArray()
+
+        const leaderboard = topDocs.map((u, index) => ({
+          rank: index + 1,
+          id: u.id,
+          name: u.displayName || u.username || 'Aluno',
+          avatarUrl: u.avatarUrl || '',
+          level: u.level || 'Explorador',
+          xp: typeof u.xp === 'number' ? u.xp : 100,
+          completedActivities: typeof u.completedActivities === 'number' ? u.completedActivities : 0,
+          walletAddress: u.walletAddress || '',
+          lastSeen: u.lastSeen,
+        }))
+
+        return res.status(200).json(leaderboard)
+      }
+
       const id = req.query.id as string
       const email = req.query.email as string
       const username = req.query.username as string

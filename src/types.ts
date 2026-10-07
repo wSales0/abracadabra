@@ -84,6 +84,20 @@ export type UserProfile = {
   completedMissions?: string[]
   fontSize?: 'normal' | 'large' | 'xlarge'
   unreadTransfer?: UnreadTransferNotification
+  soundEffectsEnabled?: boolean
+  speechEnabled?: boolean
+}
+
+export interface LeaderboardUser {
+  rank: number
+  id: string
+  name: string
+  avatarUrl?: string
+  level: string
+  xp: number
+  completedActivities: number
+  walletAddress?: string
+  lastSeen?: string
 }
 
 export type CryptoNewsItem = {

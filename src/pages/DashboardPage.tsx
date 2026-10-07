@@ -24,7 +24,10 @@ import {
   saveUserToMongo,
 } from '../lib/mongoDbService'
 import { broadcastCryptoTransfer, initCommunityRealtime, onCryptoTransferReceived } from '../lib/communityChat'
-import type { ActivityDifficulty, CryptoHeadline, CryptoTransferEvent, MarketCoin, OnlineStudent, UserProfile } from '../types'
+import { BlockExplorerModal } from '../components/BlockExplorerModal'
+import { WalletQrModal } from '../components/WalletQrModal'
+import { LeaderboardWidget } from '../components/LeaderboardWidget'
+import type { ActivityDifficulty, CryptoHeadline, CryptoTransferEvent, MarketCoin, OnlineStudent, PracticeTransaction, UserProfile } from '../types'
 
 type DashboardTab = 'home' | 'wallet' | 'community' | 'profile' | 'activities'
 
@@ -63,11 +66,13 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
     if (lastProcessedTxId.current === txKey) return
     lastProcessedTxId.current = txKey
 
-    // 1. Toca efeito sonoro sintetizado nativo Web Audio (alegre e audível em qualquer dispositivo)
-    playCryptoChime()
+    // 1. Toca efeito sonoro sintetizado nativo Web Audio (se habilitado)
+    if (user.soundEffectsEnabled !== false) {
+      playCryptoChime()
+    }
 
-    // 2. Anuncia em voz alta via sintetizador pt-BR
-    if (isSpeechSupported()) {
+    // 2. Anuncia em voz alta via sintetizador pt-BR (se habilitado)
+    if (user.speechEnabled !== false && isSpeechSupported()) {
       speakText(`Você recebeu ${data.amount} SOL de ${data.senderName}!`)
     }
 
@@ -697,6 +702,11 @@ function HomeDashboard({
           .
         </p>
       </section>
+
+      {/* Ranking da Turma conectado ao MongoDB Atlas */}
+      <section className="my-10">
+        <LeaderboardWidget currentUser={user} />
+      </section>
     </>
   )
 }
@@ -757,6 +767,8 @@ function PracticeWalletPanel({
   const [transferResult, setTransferResult] = useState<{ success: boolean; msg: string; sig?: string } | null>(null)
   const [resetNotice, setResetNotice] = useState('')
   const [speakingId, setSpeakingId] = useState<string | null>(null)
+  const [selectedExplorerTx, setSelectedExplorerTx] = useState<PracticeTransaction | null>(null)
+  const [showQrModal, setShowQrModal] = useState(false)
 
   const balance = user.practiceBalance ?? 2.5
   const address = user.walletAddress || 'Abr4CadAbRaDevnEtWaLLeT99182374619283741234'
@@ -943,9 +955,20 @@ function PracticeWalletPanel({
             <span className="address-label">CHAVE PÚBLICA (ENDEREÇO DA SUA CARTEIRA / PIX CRIPTO):</span>
             <code className="address-code">{address}</code>
           </div>
-          <button type="button" className="copy-address-btn" onClick={copyAddress} title="Copiar endereço completo">
-            {copied ? '✓ Copiado!' : '📋 Copiar Chave'}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              className="copy-address-btn"
+              onClick={() => setShowQrModal(true)}
+              title="Exibir Chave Pública em QR Code"
+              style={{ background: 'rgba(124, 58, 237, 0.35)', borderColor: 'rgba(168, 126, 255, 0.45)' }}
+            >
+              📱 QR Code
+            </button>
+            <button type="button" className="copy-address-btn" onClick={copyAddress} title="Copiar endereço completo">
+              {copied ? '✓ Copiado!' : '📋 Copiar Chave'}
+            </button>
+          </div>
         </div>
 
         {faucetNotice && <div className="wallet-notice-banner success">{faucetNotice}</div>}
@@ -1126,19 +1149,50 @@ function PracticeWalletPanel({
                 </span>
 
                 {onlinePeers.length > 0 ? (
-                  <div className="sample-recipients-list">
+                  <div className="sample-recipients-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {onlinePeers.map((peer) => (
-                      <button
+                      <div
                         key={peer.id}
-                        type="button"
-                        className="sample-recipient-pill"
-                        style={{ borderColor: 'rgba(20, 241, 149, 0.45)', background: 'rgba(20, 241, 149, 0.08)' }}
-                        onClick={() => setRecipient(peer.walletAddress)}
-                        title={`Enviar SOL para ${peer.name}`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 8px',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(20, 241, 149, 0.45)',
+                          background: 'rgba(20, 241, 149, 0.08)',
+                        }}
                       >
-                        <strong style={{ color: '#14f195' }}>🟢 {peer.name}</strong>
-                        <small>{peer.walletAddress.slice(0, 4)}...{peer.walletAddress.slice(-4)}</small>
-                      </button>
+                        <button
+                          type="button"
+                          className="sample-recipient-pill !border-0 !bg-transparent !p-0"
+                          onClick={() => setRecipient(peer.walletAddress)}
+                          title={`Selecionar ${peer.name}`}
+                        >
+                          <strong style={{ color: '#14f195' }}>🟢 {peer.name}</strong>
+                          <small>{peer.walletAddress.slice(0, 4)}...{peer.walletAddress.slice(-4)}</small>
+                        </button>
+                        <button
+                          type="button"
+                          style={{
+                            padding: '3px 7px',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            borderRadius: '5px',
+                            background: 'rgba(20, 241, 149, 0.22)',
+                            color: '#14f195',
+                            border: '1px solid rgba(20, 241, 149, 0.4)',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => {
+                            setRecipient(peer.walletAddress)
+                            setAmount('0.1')
+                          }}
+                          title={`Preencher envio rápido de 0.1 SOL para ${peer.name}`}
+                        >
+                          ⚡ 0.1 SOL
+                        </button>
+                      </div>
                     ))}
                   </div>
                 ) : (
@@ -1422,14 +1476,46 @@ function PracticeWalletPanel({
                   {typeof tx.fee === 'number' && tx.fee > 0 && <small className="tx-fee">Taxa: {tx.fee.toFixed(6)} SOL</small>}
                 </div>
 
-                <div className="tx-status-col">
+                <div className="tx-status-col" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span className="status-badge confirmed">🟢 Confirmada</span>
+                  <button
+                    type="button"
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '11px',
+                      borderRadius: '6px',
+                      background: 'rgba(124, 58, 237, 0.25)',
+                      border: '1px solid rgba(168, 126, 255, 0.4)',
+                      color: '#d8c5ff',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                    onClick={() => setSelectedExplorerTx(tx)}
+                    title="Inspecionar detalhes da transação no Explorador On-Chain"
+                  >
+                    <span>🔍</span>
+                    <span>Explorar</span>
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Modal do Explorador de Blocos On-Chain */}
+      <BlockExplorerModal tx={selectedExplorerTx} onClose={() => setSelectedExplorerTx(null)} />
+
+      {/* Modal do QR Code da Chave Pública */}
+      {showQrModal && (
+        <WalletQrModal
+          walletAddress={address}
+          userName={user.displayName}
+          onClose={() => setShowQrModal(false)}
+        />
+      )}
     </section>
   )
 }
@@ -1451,6 +1537,8 @@ function ProfilePanel({
   const [bio, setBio] = useState(user.bio)
   const [focus, setFocus] = useState(user.preferences.focus)
   const [weeklyDigest, setWeeklyDigest] = useState(user.preferences.weeklyDigest)
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(user.soundEffectsEnabled ?? true)
+  const [speechEnabled, setSpeechEnabled] = useState(user.speechEnabled ?? true)
   const [saved, setSaved] = useState(false)
   const [copiedAddr, setCopiedAddr] = useState(false)
 
@@ -1462,6 +1550,8 @@ function ProfilePanel({
       displayName: displayName.trim() || user.displayName,
       bio: bio.trim(),
       preferences: { focus, weeklyDigest },
+      soundEffectsEnabled,
+      speechEnabled,
     })
     setSaved(true)
     window.setTimeout(() => setSaved(false), 2200)
@@ -1574,6 +1664,28 @@ function ProfilePanel({
             <span>
               <strong>Resumo semanal</strong>
               <small>Receber uma seleção dos principais conteúdos para continuar descobrindo.</small>
+            </span>
+          </label>
+          <label className="preference-toggle">
+            <input
+              type="checkbox"
+              checked={soundEffectsEnabled}
+              onChange={(event) => setSoundEffectsEnabled(event.target.checked)}
+            />
+            <span>
+              <strong>🔔 Efeitos sonoros ao receber cripto</strong>
+              <small>Tocar efeito festivo nativo ao receber transferências na carteira prática.</small>
+            </span>
+          </label>
+          <label className="preference-toggle">
+            <input
+              type="checkbox"
+              checked={speechEnabled}
+              onChange={(event) => setSpeechEnabled(event.target.checked)}
+            />
+            <span>
+              <strong>🗣️ Narração por voz ao receber cripto</strong>
+              <small>Anunciar em voz alta em português o valor e o remetente de cada transferência recebida.</small>
             </span>
           </label>
         </div>

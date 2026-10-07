@@ -1,4 +1,4 @@
-import type { ChatMessage, OnlineStudent, UserProfile } from '../types'
+import type { ChatMessage, LeaderboardUser, OnlineStudent, UserProfile } from '../types'
 
 const BASE_API_URL = typeof window !== 'undefined' ? '' : 'http://localhost:3000'
 
@@ -227,6 +227,21 @@ export async function pingPresenceInMongo(user: UserProfile): Promise<OnlineStud
     return Array.isArray(data.peers) ? data.peers : []
   } catch (err) {
     console.warn('MongoDB pingPresence error:', err)
+    return []
+  }
+}
+
+/**
+ * Busca o ranking geral de alunos ordenado por XP a partir do MongoDB
+ */
+export async function fetchLeaderboardFromMongo(): Promise<LeaderboardUser[]> {
+  try {
+    const res = await fetch(`${BASE_API_URL}/api/user?action=leaderboard`)
+    if (!res.ok) return []
+    const data = await res.json()
+    return Array.isArray(data) ? data : []
+  } catch (err) {
+    console.warn('MongoDB fetchLeaderboard error:', err)
     return []
   }
 }
