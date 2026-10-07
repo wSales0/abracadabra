@@ -1,4 +1,4 @@
-import type { ChatMessage, OnlineStudent, UserProfile } from '../types'
+import type { ChatMessage, CryptoTransferEvent, OnlineStudent, UserProfile } from '../types'
 import mqtt, { type MqttClient } from 'mqtt'
 import { fetchChatMessagesFromMongo, saveChatMessageToMongo } from './mongoDbService'
 
@@ -7,6 +7,7 @@ const BROADCAST_CHANNEL_NAME = 'abracadabra_real_community_channel'
 
 const TOPIC_CHAT = 'abracadabra/v1/live/chat'
 const TOPIC_PRESENCE = 'abracadabra/v1/live/presence'
+const TOPIC_TRANSFER = 'abracadabra/v1/live/transfer'
 
 const BROKER_PRIMARY = 'wss://broker.emqx.io:8084/mqtt'
 const BROKER_FALLBACK = 'wss://broker.hivemq.com:8884/mqtt'
@@ -70,6 +71,7 @@ function saveChatMessagesLocally(messages: ChatMessage[]) {
 export interface RealtimeChatCallbacks {
   onPresenceUpdate: (peers: OnlineStudent[]) => void
   onMessageReceived: (messages: ChatMessage[]) => void
+  onCryptoReceived?: (transfer: CryptoTransferEvent) => void
   onStatusChange?: (status: 'connected' | 'connecting' | 'offline') => void
 }
 
@@ -190,7 +192,7 @@ export function initCommunityRealtime(
         if (isCleanedUp) return
         callbacks.onStatusChange?.('connected')
 
-        mqttClient?.subscribe([TOPIC_CHAT, TOPIC_PRESENCE], (err) => {
+        mqttClient?.subscribe([TOPIC_CHAT, TOPIC_PRESENCE, TOPIC_TRANSFER], (err) => {
           if (!err) {
             broadcastHeartbeat()
             pingOthers()
@@ -207,6 +209,8 @@ export function initCommunityRealtime(
             handlePresenceMessage(data)
           } else if (topic === TOPIC_CHAT) {
             handleChatMessage(data)
+          } else if (topic === TOPIC_TRANSFER) {
+            handleTransferMessage(data)
           }
         } catch {
           // ignore
@@ -267,6 +271,14 @@ export function initCommunityRealtime(
     }
   }
 
+  function handleTransferMessage(data: any) {
+    if (!data || !data.recipientAddress || typeof data.amount !== 'number') return
+    callbacks.onCryptoReceived?.(data)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('abracadabra:crypto_transfer', { detail: data }))
+    }
+  }
+
   const handleBcMessage = (event: MessageEvent) => {
     if (isCleanedUp || !event.data) return
     const msg = event.data
@@ -283,6 +295,8 @@ export function initCommunityRealtime(
       emitPresence()
     } else if (msg.type === 'new_chat_msg' && msg.chatMessage) {
       handleChatMessage(msg.chatMessage)
+    } else if (msg.type === 'crypto_transfer_event' && msg.transfer) {
+      handleTransferMessage(msg.transfer)
     }
   }
 
@@ -413,4 +427,32 @@ export function sendChatMessage(user: UserProfile, text: string): ChatMessage[] 
   bChannel?.postMessage({ type: 'new_chat_msg', chatMessage: newMsg })
 
   return updated
+}
+
+/**
+ * Emite a notificação de cripto enviada em tempo real para a rede
+ */
+export function broadcastCryptoTransfer(transfer: CryptoTransferEvent) {
+  if (mqttClient?.connected) {
+    mqttClient.publish(TOPIC_TRANSFER, JSON.stringify(transfer))
+  }
+  const bChannel = getBroadcastChannel()
+  bChannel?.postMessage({ type: 'crypto_transfer_event', transfer })
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('abracadabra:crypto_transfer', { detail: transfer }))
+  }
+}
+
+/**
+ * Registra um ouvinte para receber transferências em tempo real em qualquer lugar do app
+ */
+export function onCryptoTransferReceived(callback: (transfer: CryptoTransferEvent) => void): () => void {
+  if (typeof window === 'undefined') return () => {}
+  const handler = (e: any) => {
+    if (e.detail) callback(e.detail)
+  }
+  window.addEventListener('abracadabra:crypto_transfer', handler)
+  return () => {
+    window.removeEventListener('abracadabra:crypto_transfer', handler)
+  }
 }

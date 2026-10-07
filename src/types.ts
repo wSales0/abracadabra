@@ -21,6 +21,27 @@ export interface ChatTransfer {
   recipientAddress: string
 }
 
+export interface CryptoTransferEvent {
+  id: string
+  recipientAddress: string
+  recipientName?: string
+  senderId: string
+  senderName: string
+  senderAvatar?: string
+  senderAddress: string
+  amount: number
+  signature: string
+  timestamp: string
+}
+
+export interface UnreadTransferNotification {
+  id: string
+  senderName: string
+  amount: number
+  signature: string
+  timestamp: string
+}
+
 export interface ChatMessage {
   id: string
   senderId: string
@@ -62,6 +83,7 @@ export type UserProfile = {
   practiceTransactions?: PracticeTransaction[]
   completedMissions?: string[]
   fontSize?: 'normal' | 'large' | 'xlarge'
+  unreadTransfer?: UnreadTransferNotification
 }
 
 export type CryptoNewsItem = {

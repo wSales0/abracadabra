@@ -4,6 +4,7 @@ import { signOutDemo, updateCurrentUser } from '../lib/demoAuth'
 import { createQuestion, getActivityProgress, getLevelFromXp, recordAnswer } from '../lib/activityEngine'
 import {
   claimPracticeFaucet,
+  receivePracticeSol,
   resetPracticeWallet,
   rewardPracticeActivity,
   SAMPLE_RECIPIENTS,
@@ -14,8 +15,14 @@ import { completeMission, getCompletedMissions } from '../lib/missionsEngine'
 import { StudentMissionsWidget } from '../components/StudentMissionsWidget'
 import { AntiScamSimulator } from '../components/AntiScamSimulator'
 import { CommunityChatPanel } from '../components/CommunityChatPanel'
-import { fetchUserFromMongo, saveUserToMongo } from '../lib/mongoDbService'
-import type { ActivityDifficulty, CryptoHeadline, MarketCoin, UserProfile } from '../types'
+import {
+  clearUnreadTransferInMongo,
+  fetchUserFromMongo,
+  notifyRecipientTransferInMongo,
+  saveUserToMongo,
+} from '../lib/mongoDbService'
+import { broadcastCryptoTransfer, initCommunityRealtime, onCryptoTransferReceived } from '../lib/communityChat'
+import type { ActivityDifficulty, CryptoHeadline, CryptoTransferEvent, MarketCoin, OnlineStudent, UserProfile } from '../types'
 
 type DashboardTab = 'home' | 'wallet' | 'community' | 'profile' | 'activities'
 
@@ -47,6 +54,65 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
   })
   const [completedMissions, setCompletedMissions] = useState<string[]>(() => getCompletedMissions())
   const [missionToast, setMissionToast] = useState<string>('')
+  const [receivedBanner, setReceivedBanner] = useState<{
+    senderName: string
+    amount: number
+    sig: string
+  } | null>(null)
+  const [onlinePeers, setOnlinePeers] = useState<OnlineStudent[]>([])
+
+  // Mantém a presença do aluno ativa em toda a plataforma e descobre colegas online
+  useEffect(() => {
+    const instance = initCommunityRealtime(user, {
+      onPresenceUpdate: (peers) => setOnlinePeers(peers),
+      onMessageReceived: () => {},
+    })
+
+    return () => {
+      instance.cleanup()
+    }
+  }, [user.id, user.displayName, user.walletAddress])
+
+  // Escuta transferências de cripto recebidas em tempo real via rede P2P / MQTT
+  useEffect(() => {
+    const unsub = onCryptoTransferReceived((transfer: CryptoTransferEvent) => {
+      if (user.walletAddress && transfer.recipientAddress.trim() === user.walletAddress.trim()) {
+        const res = receivePracticeSol(user, transfer.senderName, transfer.amount, transfer.signature)
+        setUser(res.updatedUser)
+
+        if (isSpeechSupported()) {
+          speakText(`Você recebeu ${transfer.amount} SOL de ${transfer.senderName}!`)
+        }
+
+        setReceivedBanner({
+          senderName: transfer.senderName,
+          amount: transfer.amount,
+          sig: transfer.signature,
+        })
+      }
+    })
+
+    return () => {
+      unsub()
+    }
+  }, [user.walletAddress, user.practiceBalance])
+
+  // Verifica se o usuário tem notificação de cripto recebida salva no MongoDB
+  useEffect(() => {
+    if (user.unreadTransfer) {
+      const unread = user.unreadTransfer
+      if (isSpeechSupported()) {
+        speakText(`Você recebeu ${unread.amount} SOL de ${unread.senderName}!`)
+      }
+      setReceivedBanner({
+        senderName: unread.senderName,
+        amount: unread.amount,
+        sig: unread.signature,
+      })
+      clearUnreadTransferInMongo(user.id).catch(() => {})
+      setUser((prev) => ({ ...prev, unreadTransfer: undefined }))
+    }
+  }, [user.unreadTransfer, user.id])
 
   function logout() {
     stopSpeaking()
@@ -134,6 +200,31 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
       </header>
 
       <div className="dashboard-content">
+        {receivedBanner && (
+          <div className="crypto-received-banner" role="alert">
+            <span className="toast-icon">💰</span>
+            <div style={{ flex: 1 }}>
+              <strong>🎉 Cripto Recebida na sua Carteira!</strong>
+              <p>
+                Você recebeu <strong>+{receivedBanner.amount.toFixed(4)} SOL</strong> de{' '}
+                <strong>{receivedBanner.senderName}</strong> na Solana Devnet!
+              </p>
+              <small style={{ color: '#14f195', fontSize: '11px', fontFamily: 'DM Mono, monospace', opacity: 0.85 }}>
+                Assinatura: {receivedBanner.sig.slice(0, 10)}...{receivedBanner.sig.slice(-8)}
+              </small>
+            </div>
+            <button
+              type="button"
+              className="btn-banner-close"
+              onClick={() => setReceivedBanner(null)}
+              aria-label="Fechar notificação"
+              title="Fechar"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {missionToast && (
           <div className="mission-toast-banner" role="status">
             <span>✨</span>
@@ -155,7 +246,12 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
           />
         )}
         {activeTab === 'wallet' && (
-          <PracticeWalletPanel user={user} onSave={saveProfile} onTriggerMission={triggerMission} />
+          <PracticeWalletPanel
+            user={user}
+            onlinePeers={onlinePeers}
+            onSave={saveProfile}
+            onTriggerMission={triggerMission}
+          />
         )}
         {activeTab === 'community' && (
           <CommunityChatPanel user={user} onTriggerMission={triggerMission} />
@@ -407,10 +503,12 @@ function formatTxDate(isoString: string) {
 
 function PracticeWalletPanel({
   user,
+  onlinePeers = [],
   onSave,
   onTriggerMission,
 }: {
   user: UserProfile
+  onlinePeers?: OnlineStudent[]
   onSave: (changes: Partial<UserProfile>) => void
   onTriggerMission: (missionId: string, msg?: string) => void
 }) {
@@ -497,6 +595,28 @@ function PracticeWalletPanel({
           practiceBalance: res.updatedUser.practiceBalance,
           practiceTransactions: res.updatedUser.practiceTransactions,
         })
+
+        // Emite evento em tempo real via rede P2P / MQTT para notificar quem estiver online imediatamente
+        broadcastCryptoTransfer({
+          id: res.transaction.id,
+          recipientAddress: cleanRecipient,
+          senderId: user.id,
+          senderName: user.displayName,
+          senderAvatar: user.avatarUrl,
+          senderAddress: user.walletAddress || '',
+          amount: res.transaction.amount,
+          signature: res.transaction.signature,
+          timestamp: res.transaction.timestamp,
+        })
+
+        // Notifica e credita o destinatário no banco de dados MongoDB Atlas
+        notifyRecipientTransferInMongo(
+          cleanRecipient,
+          res.transaction.amount,
+          user.displayName,
+          res.transaction.signature
+        ).catch(() => {})
+
         const note = res.adjustedNotice ? ` (${res.adjustedNotice})` : ''
         setTransferResult({
           success: true,
@@ -763,6 +883,30 @@ function PracticeWalletPanel({
             </label>
 
             <div className="sample-recipients-box">
+              {onlinePeers.length > 0 && (
+                <div style={{ marginBottom: '14px' }}>
+                  <span className="sample-label" style={{ color: '#14f195', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#14f195', display: 'inline-block', boxShadow: '0 0 8px #14f195' }} />
+                    Colegas reais online agora (clique para preencher a chave):
+                  </span>
+                  <div className="sample-recipients-list">
+                    {onlinePeers.map((peer) => (
+                      <button
+                        key={peer.id}
+                        type="button"
+                        className="sample-recipient-pill"
+                        style={{ borderColor: 'rgba(20, 241, 149, 0.45)', background: 'rgba(20, 241, 149, 0.08)' }}
+                        onClick={() => setRecipient(peer.walletAddress)}
+                        title={`Enviar SOL para ${peer.name}`}
+                      >
+                        <strong style={{ color: '#14f195' }}>🟢 {peer.name}</strong>
+                        <small>{peer.walletAddress.slice(0, 4)}...{peer.walletAddress.slice(-4)}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <span className="sample-label">Ou escolha um destinatário de teste da turma:</span>
               <div className="sample-recipients-list">
                 {SAMPLE_RECIPIENTS.map((item) => (

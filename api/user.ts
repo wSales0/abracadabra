@@ -41,6 +41,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'POST' || req.method === 'PUT') {
+      const action = req.query.action as string
+
+      if (action === 'transfer') {
+        const { recipientAddress, amount, senderName, signature } = req.body || {}
+        if (!recipientAddress || !amount || Number(amount) <= 0) {
+          return res.status(400).json({ error: 'Dados de transferência inválidos' })
+        }
+
+        const numAmount = Number(amount)
+        const recipientDoc = await usersCol.findOne({ walletAddress: recipientAddress })
+
+        if (recipientDoc) {
+          const currentBalance = typeof recipientDoc.practiceBalance === 'number' ? recipientDoc.practiceBalance : 2.5
+          const newBalance = Number((currentBalance + numAmount).toFixed(6))
+          const rxTx = {
+            id: `tx-recv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            type: 'receive',
+            amount: numAmount,
+            signature: signature || `sig-${Date.now()}`,
+            toOrFrom: `Recebido de ${senderName || 'Colega'}`,
+            timestamp: new Date().toISOString(),
+            status: 'confirmada',
+            fee: 0,
+          }
+
+          await usersCol.updateOne(
+            { _id: recipientDoc._id },
+            {
+              $set: {
+                practiceBalance: newBalance,
+                unreadTransfer: {
+                  id: `transfer-${Date.now()}`,
+                  senderName: senderName || 'Colega',
+                  amount: numAmount,
+                  signature: signature || '',
+                  timestamp: new Date().toISOString(),
+                },
+                updatedAt: new Date(),
+              },
+              $push: {
+                practiceTransactions: {
+                  $each: [rxTx],
+                  $position: 0,
+                },
+              },
+            }
+          )
+
+          return res.status(200).json({ success: true, credited: true })
+        }
+
+        return res.status(200).json({ success: true, credited: false, note: 'Destinatário ainda não registrado no banco' })
+      }
+
+      if (action === 'clear_unread_transfer') {
+        const { userId } = req.body || {}
+        if (userId) {
+          await usersCol.updateOne({ id: userId }, { $unset: { unreadTransfer: '' } })
+        }
+        return res.status(200).json({ success: true })
+      }
+
       const user = req.body
       if (!user || !user.id) {
         return res.status(400).json({ error: 'Dados do usuário ou id ausentes' })

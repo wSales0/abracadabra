@@ -145,3 +145,47 @@ export async function recordAnswerToMongo(
     return null
   }
 }
+
+/**
+ * Registra transferência de cripto diretamente para o destinatário no MongoDB
+ */
+export async function notifyRecipientTransferInMongo(
+  recipientAddress: string,
+  amount: number,
+  senderName: string,
+  signature: string
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE_API_URL}/api/user?action=transfer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipientAddress,
+        amount,
+        senderName,
+        signature,
+      }),
+    })
+    return res.ok
+  } catch (err) {
+    console.warn('MongoDB transfer notify error:', err)
+    return false
+  }
+}
+
+/**
+ * Limpa a notificação de cripto recebida do usuário no MongoDB
+ */
+export async function clearUnreadTransferInMongo(userId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE_API_URL}/api/user?action=clear_unread_transfer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+    return res.ok
+  } catch (err) {
+    console.warn('MongoDB clearUnreadTransfer error:', err)
+    return false
+  }
+}
