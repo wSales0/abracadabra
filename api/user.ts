@@ -141,7 +141,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 updatedAt: new Date(),
               }
             },
-            { upsert: false }
+            { upsert: true }
           )
         }
 
