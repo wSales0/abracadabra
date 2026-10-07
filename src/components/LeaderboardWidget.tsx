@@ -65,17 +65,6 @@ export function LeaderboardWidget({ currentUser }: LeaderboardWidgetProps) {
             </p>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={loadLeaderboard}
-          disabled={loading}
-          className="text-xs text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-          title="Atualizar ranking agora"
-        >
-          <span className={loading ? 'animate-spin inline-block' : ''}>🔄</span>
-          <span>{loading ? 'Atualizando...' : 'Atualizar'}</span>
-        </button>
       </div>
 
       {/* Pódio (Top 3) */}

@@ -402,7 +402,7 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
             Comunidade &amp; Chat <span className="nav-online-pill">ao vivo</span>
           </button>
           <button className={activeTab === 'ranking' ? 'active' : ''} onClick={() => setActiveTab('ranking')}>
-            🏆 Ranking da Turma
+            Ranking da Turma
           </button>
           <button className={activeTab === 'activities' ? 'active' : ''} onClick={() => setActiveTab('activities')}>
             Atividades
