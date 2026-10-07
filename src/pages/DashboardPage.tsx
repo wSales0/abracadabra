@@ -29,7 +29,7 @@ import { WalletQrModal } from '../components/WalletQrModal'
 import { LeaderboardWidget } from '../components/LeaderboardWidget'
 import type { ActivityDifficulty, CryptoHeadline, CryptoTransferEvent, MarketCoin, OnlineStudent, PracticeTransaction, UserProfile } from '../types'
 
-type DashboardTab = 'home' | 'wallet' | 'community' | 'profile' | 'activities'
+type DashboardTab = 'home' | 'wallet' | 'community' | 'ranking' | 'activities' | 'profile'
 
 type DashboardPageProps = {
   user: UserProfile
@@ -401,6 +401,9 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
           <button className={activeTab === 'community' ? 'active' : ''} onClick={() => setActiveTab('community')}>
             Comunidade &amp; Chat <span className="nav-online-pill">ao vivo</span>
           </button>
+          <button className={activeTab === 'ranking' ? 'active' : ''} onClick={() => setActiveTab('ranking')}>
+            🏆 Ranking da Turma
+          </button>
           <button className={activeTab === 'activities' ? 'active' : ''} onClick={() => setActiveTab('activities')}>
             Atividades
           </button>
@@ -496,6 +499,18 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
         )}
         {activeTab === 'community' && (
           <CommunityChatPanel user={user} onTriggerMission={triggerMission} />
+        )}
+        {activeTab === 'ranking' && (
+          <section className="panel-page">
+            <div className="wallet-header-block mb-6">
+              <p className="dashboard-kicker">CLASSIFICAÇÃO GERAL · XP &amp; DESAFIOS</p>
+              <h1>Ranking da Turma</h1>
+              <p className="panel-lead">
+                Acompanhe o desempenho dos colegas, veja quem está na liderança e avance nos desafios práticos para subir no pódio!
+              </p>
+            </div>
+            <LeaderboardWidget currentUser={user} />
+          </section>
         )}
         {activeTab === 'profile' && (
           <ProfilePanel
@@ -701,11 +716,6 @@ function HomeDashboard({
           </a>
           .
         </p>
-      </section>
-
-      {/* Ranking da Turma conectado ao MongoDB Atlas */}
-      <section className="my-10">
-        <LeaderboardWidget currentUser={user} />
       </section>
     </>
   )

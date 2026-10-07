@@ -55,13 +55,13 @@ export function LeaderboardWidget({ currentUser }: LeaderboardWidgetProps) {
           </div>
           <div>
             <h2 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-              Ranking Global da Turma
+              Ranking Geral da Turma
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-violet-500/20 text-violet-300 border border-violet-500/30">
-                MongoDB Atlas
+                Ao Vivo
               </span>
             </h2>
             <p className="text-xs text-zinc-400">
-              Alunos mais dedicados ordenados por XP e missões on-chain concluídas
+              Alunos mais dedicados ordenados por XP e missões concluídas
             </p>
           </div>
         </div>
