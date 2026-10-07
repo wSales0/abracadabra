@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { connectToDatabase } from './_lib/mongodb'
+import { connectToDatabase } from './_lib/mongodb.ts'
 
 const DEFAULT_WELCOME_MSG = {
   id: 'msg-system-welcome',
