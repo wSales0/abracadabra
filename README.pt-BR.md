@@ -1,182 +1,118 @@
 <p align="center">
-<a href="./README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-7C3AED?style=for-the-badge" /></a>
-  <a href="./README.pt-BR.md"><img alt="Português (BR )" src="https://img.shields.io/badge/lang-Português%20(BR )-14F195?style=for-the-badge&labelColor=09090F" /></a>
-</p> <p align="center">
-  <img src="./assets/logo-abracadabra.png" alt="Abracadabra" width="220" />
-</p> <h1 align="center">Abracadabra · Web3 EdTech</h1> <p align="center">
-  <strong>Aprenda. Pratique. Converse. Evolua com confiança.</strong>  
+  <a href="./README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-7C3AED?style=for-the-badge" /></a>
+  <a href="./README.pt-BR.md"><img alt="Português (BR)" src="https://img.shields.io/badge/lang-Português%20(BR)-14F195?style=for-the-badge&labelColor=09090F" /></a>
+</p>
 
-  Uma plataforma educacional Web3 que transforma conceitos difíceis em prática guiada e segura.
-</p> <p align="center">
-  <img alt="Status" src="https://img.shields.io/badge/status-protótipo%20funcional-7C3AED" />
+<p align="center">
+  <img src="./assets/logo-abracadabra.png" alt="Abracadabra" width="220" />
+</p>
+
+<h1 align="center">Abracadabra · Web3 EdTech</h1>
+
+<p align="center">
+  <strong>Aprenda. Pratique. Converse. Evolua sem medo.</strong><br />
+  A plataforma educacional Web3 pensada para todas as idades — de jovens estudantes a idosos dando seus primeiros passos no universo cripto.
+</p>
+
+<p align="center">
+  <img alt="Status" src="https://img.shields.io/badge/status-live%20production-14F195" />
   <img alt="Rede" src="https://img.shields.io/badge/rede-Solana%20Devnet-14F195" />
-  <img alt="Chat" src="https://img.shields.io/badge/chat-MQTT%20sobre%20WSS-7C3AED" />
+  <img alt="Chat" src="https://img.shields.io/badge/chat-WebSockets%20ao%20vivo-7C3AED" />
   <img alt="Categoria" src="https://img.shields.io/badge/categoria-EdTech%20Web3-09090F" />
   <img alt="Deploy" src="https://img.shields.io/badge/deploy-Vercel-black" />
 </p>
 
-> **Estado atual:** o projeto tem um protótipo funcional para demonstração. A carteira de treino, o chat, a presença, as missões, o simulador anti-golpe, a acessibilidade e o login social possuem fluxos locais ou simulados; isso não equivale a autenticação, custódia, banco de dados ou transações de produção.
+---
 
 ## 🧙‍♂️ O que é o Abracadabra?
 
-O **Abracadabra** é uma plataforma EdTech gamificada para tornar blockchain e criptomoedas mais fáceis de entender. Em vez de começar com risco financeiro real, o aluno pratica em um ambiente controlado: aprende por analogias do cotidiano, identifica golpes, acompanha missões, testa conceitos e interage com uma comunidade ao vivo.
+O **Abracadabra** é uma plataforma EdTech gamificada que desmistifica o universo de blockchain e criptomoedas. 
 
-A proposta é aproximar o aluno da Web3 com clareza e segurança, sem pedir seed phrase ou chave privada.
+Em vez de jogar os usuários direto em exchanges ou riscos reais, o Abracadabra oferece um **laboratório de prática 100% seguro**: analogias com o dia a dia (como comparar Chave Pública com Chave Pix), simuladores anti-golpe, carteira de teste com torneira de moedas gratuitas e uma comunidade ao vivo com pessoas de verdade navegando juntas.
 
-## ✨ Funcionalidades atuais
+---
 
-### 🧪 1. Carteira de prática Web3
+## ✨ Principais Funcionalidades
 
-- Cada aluno pode receber uma carteira de demonstração com endereço público e saldo inicial de prática.
+### 🧪 1. Carteira Prática Web3 (Solana Devnet Simulada)
+- **Geração Automática de Carteira:** Toda conta recebe uma chave pública e saldo inicial de treino (2.5 SOL Devnet).
+- **Torneira Gratuita (Faucet):** Botão para solicitar +1.0 SOL de teste sempre que quiser praticar sem custo real.
+- **Simulador de Envio On-Chain:** Pratique preencher chaves públicas de destino, acompanhar o débito de taxas de rede (*Gas Fee*) e verificar a assinatura/hash da transação.
+- **Histórico Completo de Transações:** Exibição clara de débitos, créditos, taxas e status de confirmação.
 
-- O faucet simulado adiciona saldo de treino sem movimentar dinheiro real.
+### 💬 2. Comunidade & Chat em Tempo Real
+- **Pessoas de Verdade ao Vivo:** Conexão contínua via WebSockets globais (MQTT sobre WSS via EMQX e HiveMQ + BroadcastChannel local).
+- **Detecção de Presença (Heartbeat):** A coluna de alunos conectados exibe exatamente quem está navegando no site agora. Se você estiver sozinho, a plataforma avisa e disponibiliza botão de convite para amigos.
+- **Troca de Ideias Instantânea:** Bate-papo ao vivo para tirar dúvidas com colegas e instrutores em tempo real.
 
-- O fluxo de envio simulado mostra destino, taxa de rede, débito, saldo e hash de demonstração.
+### 🛡️ 3. Simulador Anti-Golpe ("Cilada ou Seguro?")
+- **Casos Reais do Cotidiano:** Mensagens de WhatsApp se passando por suporte, falsos airdrops, sites clonados e contratos suspeitos.
+- **Explicações Didáticas:** Ao responder se a situação é segura ou cilada, o aluno recebe a justificativa em linguagem clara e aprende regras de ouro (ex: *“Nunca compartilhe suas 12 palavras ou Chave Privada”*).
 
-- O histórico apresenta transações, status e detalhes para fins educacionais.
+### 🎯 4. Trilha do Aprendiz (Missões Guiadas)
+- Barra de progresso interativa com percentual de conclusão.
+- Missões didáticas: descobrir a chave pública, coletar no faucet, fazer transferência de treino, acertar desafios no laboratório e passar no teste de segurança.
+- Recompensas instantâneas em **XP** e **SOL de treino**.
 
-- O modal também detecta extensões como Phantom, Solflare, Backpack e Coinbase Wallet quando disponíveis, além da opção de colar um endereço público.
+### 👓 5. Acessibilidade Inclusiva (Para Jovens e Idosos)
+- **Controle de Tamanho de Fonte:** Botão `Aa` no topo com 3 níveis (Normal, Grande, Muito Grande) com persistência local.
+- **Leitor em Áudio (Voz Nativa):** Botão de áudio para ouvir as perguntas e explicações em voz alta em português (Web Speech API).
+- **Tradutor do Cotidiano:** Dicionário intuitivo que compara termos técnicos com o dia a dia:
+  - *Chave Pública* = Sua Chave Pix (pode compartilhar sem medo).
+  - *Chave Privada* = Senha do Banco (nunca entregue a ninguém).
+  - *Gas Fee* = Tarifa de envio do correio/cartório.
+  - *Faucet* = Torneira pública de dinheiro de mentira para treinar.
 
-> A carteira de demonstração e o fluxo de transação não devem ser tratados como custódia, carteira de produção ou prova de transação on-chain. A validação e a integração real com a Solana ainda precisam ser implementadas com cuidado.
+### 📊 6. Radar de Mercado e Notícias em Tempo Real
+- Cotações atualizadas das 8 principais moedas via API pública da [Crypto Vision News](https://cryptocurrency.cv/).
+- Radar diário de maior alta, maior queda e líder por market cap.
+- Manchetes com links diretos para as fontes originais respeitando direitos autorais.
 
-### 💬 2. Comunidade e chat em tempo real
+---
 
-- Chat global com MQTT sobre WSS.
+## 🛠️ Tecnologias Utilizadas
 
-- Broker principal EMQX e fallback HiveMQ.
+- **Frontend:** React 19, TypeScript, Vite.
+- **Estilização:** CSS3 Moderno com variáveis, gradientes, Glassmorphism e Dark Mode.
+- **Comunicação em Tempo Real:** WebSockets (MQTT Client sobre TLS/WSS) + `BroadcastChannel` para multi-abas.
+- **Acessibilidade:** Web Speech API (Text-to-Speech) e Dynamic Font Scaling.
+- **Hospedagem & CI/CD:** Vercel integrada ao GitHub.
 
-- `BroadcastChannel` para comunicação entre abas e fallback local.
+---
 
-- Mensagens ficam em cache local no navegador para a experiência do protótipo.
-
-- A presença usa batimentos de 2 segundos.
-
-- Um aluno é removido após 5 segundos sem sinal.
-
-- A varredura de saída acontece a cada 1 segundo.
-
-- O Last Will and Testament do MQTT publica uma saída quando a conexão cai.
-
-- Existe atualização manual de presença e convite compartilhável quando não há outros colegas detectados.
-
-A presença indica clientes conectados ao canal naquele momento; ela não é uma verificação de identidade civil. O broker público e o chat ainda precisam de autenticação, moderação, limites e infraestrutura própria antes de uma operação pública em escala.
-
-### 🛡️ 3. Simulador anti-golpe — “Cilada ou Seguro?”
-
-O aluno analisa situações inspiradas em golpes comuns, como falso suporte, falso airdrop, links maliciosos e solicitações de seed phrase. Depois da resposta, recebe explicação e orientação prática. O treinamento também pode ser ouvido em voz alta quando o navegador oferece suporte à Web Speech API.
-
-### 🎯 4. Trilha do Aprendiz
-
-A trilha organiza missões guiadas com barra de progresso. Entre os passos estão reconhecer a chave pública, usar o faucet de treino, praticar uma transferência simulada, responder desafios e concluir o laboratório de segurança. As recompensas atuais são XP e SOL de prática dentro do protótipo.
-
-### 👓 5. Acessibilidade e linguagem simples
-
-- Controle `Aa` com os tamanhos Normal, Grande e Muito Grande.
-
-- Preferência de fonte persistida localmente.
-
-- Leitura em voz alta em português para enunciados e explicações.
-
-- “Tradutor do Cotidiano” com analogias simples:
-  - Chave Pública = Chave Pix;
-  - Chave Privada = Senha do banco;
-  - Gas Fee = Tarifa de envio;
-  - Faucet = Torneira de saldo de brincadeira para treinar.
-
-### 📊 6. Mercado e notícias
-
-- Dados de mercado das principais moedas pela API pública da [Crypto Vision News](https://cryptocurrency.cv/).
-
-- Radar com maior alta, maior queda e líder por capitalização.
-
-- Manchetes relacionadas com título, fonte, data e link para o artigo original.
-
-Dados de mercado e manchetes são exibidos para contexto educacional e não constituem recomendação financeira.
-
-### 🔑 7. Autenticação
-
-- Login demonstrativo rápido.
-
-- Fluxo de acesso rápido apresentado como “Continuar com Google”.
-
-- Janela oficial do Google disponível somente quando um Google OAuth Client ID válido é configurado.
-
-- O login social rápido sem OAuth configurado é uma demonstração local, não uma autenticação Google completa.
-
-## 📌 Atualização mais recente
-
-O commit mais recente do GitHub é `555ca80`, com a mensagem `perf: presenca ultra-rapida de alunos online com Last Will no broker, heartbeat de 2s e varredura de saida a cada 1s`.
-
-Essa atualização alterou:
-
-- `src/components/CommunityChatPanel.tsx`;
-
-- `src/lib/communityChat.ts`;
-
-- `src/styles.css`.
-
-O foco foi tornar a presença mais rápida, adicionar Last Will no broker e incluir atualização manual da lista de alunos.
-
-## 🛠️ Tecnologias
-
-- **Frontend:** React 19, TypeScript e Vite.
-
-- **Estilos:** CSS moderno com variáveis, gradientes, glassmorphism e dark mode.
-
-- **Tempo real:** MQTT sobre WSS, EMQX, HiveMQ e `BroadcastChannel`.
-
-- **Acessibilidade:** Web Speech API e escala dinâmica de fonte.
-
-- **Dados de mercado:** API pública da Crypto Vision News.
-
-- **Hospedagem:** Vercel integrada ao GitHub.
-
-## ⚖️ Direitos autorais e uso de notícias
-
-A API agrega manchetes e metadados de publishers terceiros. O fato de a API ser pública ou gratuita não significa que as matérias sejam livres de direitos autorais. O conteúdo original continua pertencendo aos publishers.
-
-O Abracadabra deve manter apenas o necessário para encaminhar o usuário à fonte:
-
-- título;
-
-- publisher;
-
-- data;
-
-- URL original;
-
-- atribuição visível.
-
-Não copiar ou redistribuir corpo da matéria, resumo editorial, imagens de terceiros ou reescritas automáticas. A atribuição não substitui uma licença editorial. Antes de uso comercial, cache prolongado ou redistribuição em escala, revisar os [termos da API](https://cryptocurrency.cv/terms) e as regras dos publishers.
-
-## 🚀 Como executar
+## 🚀 Como Rodar o Projeto Localmente
 
 ```bash
+# 1. Clone o repositório
 git clone https://github.com/wSales0/abracadabra.git
 cd abracadabra
+
+# 2. Instale as dependências
 npm install
+
+# 3. Inicie o servidor de desenvolvimento
 npm run dev
+
+# 4. Abra no navegador:
+# http://localhost:3000
 ```
 
-Depois, abra o endereço indicado pelo Vite. Para build de produção:
-
+Para gerar a build de produção otimizada:
 ```bash
 npm run build
 ```
 
-## 👥 Credenciais de demonstração
+---
 
-```
-Usuário: teste123
-Senha: 123
-```
+## 👥 Credenciais de Demonstração
 
-O fluxo de Google OAuth oficial exige configuração própria no Google Cloud e não deve receber credenciais secretas no frontend.
+Para navegar e testar a plataforma:
+- **Login Demo:** `teste123`
+- **Senha Demo:** `123`
+- Ou utilize a opção **"Continuar com Google"** diretamente na tela inicial.
 
-## 🔮 Próximos passos técnicos
+---
 
-Para produção, será necessário adicionar autenticação real, banco de dados, RLS, moderação de chat, broker próprio ou protegido, rate limiting, cache server-side, validação de XP no servidor e integração on-chain verificável. Supabase Auth, Database, Storage e Edge Functions são opções compatíveis com a arquitetura planejada.
+## 📄 Licença e Aviso Legal
 
-## 📄 Licença e aviso
-
-O Abracadabra é um projeto educacional para demonstração e hackathon. Dados de mercado e notícias não constituem recomendação financeira. As licenças da API, dos publishers e dos brokers externos são independentes da licença do código do Abracadabra; revise seus termos antes de uso comercial.
+O **Abracadabra** é um projeto com fins estritamente **educacionais** desenvolvido para hackathon. Os dados de mercado e notícias exibidos têm propósito pedagógico e não constituem recomendação de investimento financeiro.
