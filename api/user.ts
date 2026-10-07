@@ -71,6 +71,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const usersCol = db.collection('users')
 
     if (req.method === 'GET') {
+      const action = req.query.action as string
+      if (action === 'presence') {
+        const currentUserId = (req.query.currentUserId as string) || ''
+        const threshold = new Date(Date.now() - 45000)
+        const onlineDocs = await usersCol
+          .find({
+            lastSeen: { $gte: threshold },
+            id: { $ne: currentUserId }
+          })
+          .sort({ lastSeen: -1 })
+          .limit(30)
+          .toArray()
+
+        const peers = onlineDocs.map((u) => ({
+          id: u.id,
+          name: u.displayName || u.username || 'Aluno',
+          role: u.level || 'Explorador',
+          avatarUrl: u.avatarUrl || '',
+          walletAddress: u.walletAddress || '',
+          status: 'online',
+          xp: u.xp || 100,
+          isCurrentUser: false,
+          lastSeen: u.lastSeen,
+        }))
+
+        return res.status(200).json(peers)
+      }
+
       const id = req.query.id as string
       const email = req.query.email as string
       const username = req.query.username as string
@@ -96,6 +124,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'POST' || req.method === 'PUT') {
       const action = req.query.action as string
+
+      if (action === 'presence') {
+        const { userId, name, walletAddress, avatarUrl, level, xp } = req.body || {}
+        if (userId) {
+          await usersCol.updateOne(
+            { id: userId },
+            {
+              $set: {
+                ...(name ? { displayName: name } : {}),
+                ...(walletAddress ? { walletAddress } : {}),
+                ...(avatarUrl ? { avatarUrl } : {}),
+                ...(level ? { level } : {}),
+                ...(typeof xp === 'number' ? { xp } : {}),
+                lastSeen: new Date(),
+                updatedAt: new Date(),
+              }
+            },
+            { upsert: false }
+          )
+        }
+
+        const threshold = new Date(Date.now() - 45000)
+        const onlineDocs = await usersCol
+          .find({
+            lastSeen: { $gte: threshold },
+            id: { $ne: userId || '' }
+          })
+          .sort({ lastSeen: -1 })
+          .limit(30)
+          .toArray()
+
+        const peers = onlineDocs.map((u) => ({
+          id: u.id,
+          name: u.displayName || u.username || 'Aluno',
+          role: u.level || 'Explorador',
+          avatarUrl: u.avatarUrl || '',
+          walletAddress: u.walletAddress || '',
+          status: 'online',
+          xp: u.xp || 100,
+          isCurrentUser: false,
+          lastSeen: u.lastSeen,
+        }))
+
+        return res.status(200).json({ success: true, peers })
+      }
 
       if (action === 'transfer') {
         const { recipientAddress, amount, senderName, signature } = req.body || {}

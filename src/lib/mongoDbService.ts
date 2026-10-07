@@ -1,4 +1,4 @@
-import type { ChatMessage, UserProfile } from '../types'
+import type { ChatMessage, OnlineStudent, UserProfile } from '../types'
 
 const BASE_API_URL = typeof window !== 'undefined' ? '' : 'http://localhost:3000'
 
@@ -187,5 +187,46 @@ export async function clearUnreadTransferInMongo(userId: string): Promise<boolea
   } catch (err) {
     console.warn('MongoDB clearUnreadTransfer error:', err)
     return false
+  }
+}
+
+/**
+ * Busca a lista de colegas que estão com o site aberto em tempo real via MongoDB
+ */
+export async function fetchOnlinePeersFromMongo(currentUserId: string): Promise<OnlineStudent[]> {
+  try {
+    const res = await fetch(`${BASE_API_URL}/api/user?action=presence&currentUserId=${encodeURIComponent(currentUserId)}`)
+    if (!res.ok) return []
+    const data = await res.json()
+    return Array.isArray(data) ? data : []
+  } catch (err) {
+    console.warn('MongoDB fetchOnlinePeers error:', err)
+    return []
+  }
+}
+
+/**
+ * Registra a presença do aluno atual no MongoDB e retorna os colegas online imediatamente
+ */
+export async function pingPresenceInMongo(user: UserProfile): Promise<OnlineStudent[]> {
+  try {
+    const res = await fetch(`${BASE_API_URL}/api/user?action=presence`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id,
+        name: user.displayName,
+        walletAddress: user.walletAddress,
+        avatarUrl: user.avatarUrl,
+        level: user.level,
+        xp: user.xp,
+      }),
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return Array.isArray(data.peers) ? data.peers : []
+  } catch (err) {
+    console.warn('MongoDB pingPresence error:', err)
+    return []
   }
 }

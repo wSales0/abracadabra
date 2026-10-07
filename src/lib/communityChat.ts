@@ -433,8 +433,21 @@ export function sendChatMessage(user: UserProfile, text: string): ChatMessage[] 
  * Emite a notificação de cripto enviada em tempo real para a rede
  */
 export function broadcastCryptoTransfer(transfer: CryptoTransferEvent) {
+  const payload = JSON.stringify(transfer)
   if (mqttClient?.connected) {
-    mqttClient.publish(TOPIC_TRANSFER, JSON.stringify(transfer))
+    mqttClient.publish(TOPIC_TRANSFER, payload, { qos: 1 })
+  } else {
+    // Se o cliente MQTT estava oscilando ou reconectando, tenta novamente nos próximos milissegundos
+    setTimeout(() => {
+      if (mqttClient?.connected) {
+        mqttClient.publish(TOPIC_TRANSFER, payload, { qos: 1 })
+      }
+    }, 250)
+    setTimeout(() => {
+      if (mqttClient?.connected) {
+        mqttClient.publish(TOPIC_TRANSFER, payload, { qos: 1 })
+      }
+    }, 600)
   }
   const bChannel = getBroadcastChannel()
   bChannel?.postMessage({ type: 'crypto_transfer_event', transfer })

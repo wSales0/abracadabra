@@ -17,8 +17,10 @@ import { AntiScamSimulator } from '../components/AntiScamSimulator'
 import { CommunityChatPanel } from '../components/CommunityChatPanel'
 import {
   clearUnreadTransferInMongo,
+  fetchOnlinePeersFromMongo,
   fetchUserFromMongo,
   notifyRecipientTransferInMongo,
+  pingPresenceInMongo,
   saveUserToMongo,
 } from '../lib/mongoDbService'
 import { broadcastCryptoTransfer, initCommunityRealtime, onCryptoTransferReceived } from '../lib/communityChat'
@@ -97,10 +99,17 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
     return () => clearTimeout(timer)
   }, [receivedAlert])
 
-  // Mantém a presença do aluno ativa em toda a plataforma e descobre colegas online
+  // Mantém a presença do aluno ativa em toda a plataforma e descobre colegas online via P2P
   useEffect(() => {
     const instance = initCommunityRealtime(user, {
-      onPresenceUpdate: (peers) => setOnlinePeers(peers),
+      onPresenceUpdate: (incoming) => {
+        setOnlinePeers((prev) => {
+          const map = new Map<string, OnlineStudent>()
+          prev.forEach((p) => { if (p.id !== user.id) map.set(p.id, p) })
+          incoming.forEach((p) => { if (p.id !== user.id) map.set(p.id, p) })
+          return Array.from(map.values())
+        })
+      },
       onMessageReceived: () => {},
     })
 
@@ -108,6 +117,64 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
       instance.cleanup()
     }
   }, [user.id, user.displayName, user.walletAddress])
+
+  // Sincronização ultra-rápida de presença online via MongoDB Atlas (<100ms)
+  // Carrega imediatamente as pessoas reais online sem depender da demora do broker MQTT
+  useEffect(() => {
+    if (!user.id) return
+    let isMounted = true
+
+    const syncMongoPresence = async () => {
+      try {
+        const peers = await pingPresenceInMongo(user)
+        if (!isMounted) return
+        if (peers && Array.isArray(peers)) {
+          setOnlinePeers((prev) => {
+            const map = new Map<string, OnlineStudent>()
+            // Preenche os colegas ativos do MongoDB
+            peers.forEach((p) => {
+              if (p.id !== user.id) map.set(p.id, p)
+            })
+            // Preserva também qualquer colega já descoberto pelo P2P
+            prev.forEach((p) => {
+              if (p.id !== user.id && !map.has(p.id)) map.set(p.id, p)
+            })
+            return Array.from(map.values())
+          })
+        }
+      } catch {}
+    }
+
+    // Ping imediato ao abrir o app (instantâneo)
+    syncMongoPresence()
+    // Atualiza a presença no MongoDB a cada 4 segundos
+    const presenceTimer = setInterval(syncMongoPresence, 4000)
+
+    const onFocus = () => syncMongoPresence()
+    window.addEventListener('focus', onFocus)
+
+    return () => {
+      isMounted = false
+      clearInterval(presenceTimer)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [user.id, user.displayName, user.walletAddress])
+
+  // Quando o aluno entra na aba da Carteira Prática, atualiza imediatamente os colegas online
+  useEffect(() => {
+    if (activeTab === 'wallet' && user.id) {
+      fetchOnlinePeersFromMongo(user.id).then((peers) => {
+        if (peers && peers.length > 0) {
+          setOnlinePeers((prev) => {
+            const map = new Map<string, OnlineStudent>()
+            peers.forEach((p) => { if (p.id !== user.id) map.set(p.id, p) })
+            prev.forEach((p) => { if (p.id !== user.id && !map.has(p.id)) map.set(p.id, p) })
+            return Array.from(map.values())
+          })
+        }
+      }).catch(() => {})
+    }
+  }, [activeTab, user.id])
 
   // CAMADA 1 (Instantânea): Escuta transferências de cripto recebidas via rede P2P / MQTT em tempo real
   useEffect(() => {
@@ -140,8 +207,8 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
     }
   }, [user.walletAddress, user.id, user.username, triggerCryptoArrivalNotification])
 
-  // CAMADA 2 (Garantida): Polling contínuo no MongoDB Atlas (a cada 2.5s)
-  // Garante que transferências enviadas enquanto offline ou por outro dispositivo sejam notificadas e creditadas
+  // CAMADA 2 (Garantida & Acelerada): Sincronização ultra-rápida (a cada 900ms) com o MongoDB Atlas
+  // Garante que a notificação chegue em menos de 1 segundo mesmo sem broker MQTT
   useEffect(() => {
     if (!user.id) return
 
@@ -190,12 +257,34 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
       } catch {}
     }
 
+    // Checagem imediata ao montar
     syncWithMongo()
-    const pollInterval = setInterval(syncWithMongo, 2500)
+
+    // Intervalo acelerado de 900ms quando a aba está ativa para resposta imediata
+    const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return
+      }
+      syncWithMongo()
+    }, 900)
+
+    // Intervalo de segundo plano (2.5s se a janela estiver minimizada)
+    const bgInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        syncWithMongo()
+      }
+    }, 2500)
+
+    const onWakeup = () => syncWithMongo()
+    window.addEventListener('focus', onWakeup)
+    document.addEventListener('visibilitychange', onWakeup)
 
     return () => {
       isMounted = false
       clearInterval(pollInterval)
+      clearInterval(bgInterval)
+      window.removeEventListener('focus', onWakeup)
+      document.removeEventListener('visibilitychange', onWakeup)
     }
   }, [user.id, user.practiceBalance, triggerCryptoArrivalNotification])
 
@@ -779,7 +868,7 @@ function PracticeWalletPanel({
           msg: res.error || 'Erro ao processar transferência simulada.',
         })
       }
-    }, 800)
+    }, 60)
   }
 
   function handleReset() {
@@ -1030,12 +1119,13 @@ function PracticeWalletPanel({
             </label>
 
             <div className="sample-recipients-box">
-              {onlinePeers.length > 0 && (
-                <div style={{ marginBottom: '14px' }}>
-                  <span className="sample-label" style={{ color: '#14f195', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#14f195', display: 'inline-block', boxShadow: '0 0 8px #14f195' }} />
-                    Colegas reais online agora (clique para preencher a chave):
-                  </span>
+              <div style={{ marginBottom: '14px' }}>
+                <span className="sample-label" style={{ color: '#14f195', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: onlinePeers.length > 0 ? '#14f195' : '#f59e0b', display: 'inline-block', boxShadow: onlinePeers.length > 0 ? '0 0 8px #14f195' : 'none' }} />
+                  {onlinePeers.length > 0 ? `Colegas reais online agora (${onlinePeers.length}):` : 'Colegas na plataforma:'}
+                </span>
+
+                {onlinePeers.length > 0 ? (
                   <div className="sample-recipients-list">
                     {onlinePeers.map((peer) => (
                       <button
@@ -1051,8 +1141,14 @@ function PracticeWalletPanel({
                       </button>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div style={{ padding: '8px 12px', borderRadius: '8px', background: 'rgba(255, 255, 255, 0.03)', border: '1px dashed rgba(255, 255, 255, 0.12)', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                      Nenhum outro aluno com o site aberto no momento. Você pode usar os destinatários de demonstração abaixo ou abrir em outra aba/dispositivo para testar!
+                    </span>
+                  </div>
+                )}
+              </div>
 
               <span className="sample-label">Ou escolha um destinatário de teste da turma:</span>
               <div className="sample-recipients-list">
