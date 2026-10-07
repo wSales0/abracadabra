@@ -56,6 +56,9 @@ export function createQuestion(difficulty: ActivityDifficulty): ActivityQuestion
   return { id: `${difficulty}-reasoning-${counter}`, difficulty, category: 'Raciocínio', prompt: `${openers[counter % openers.length]} por que entender ${concept.term} ajuda antes de fazer uma operação on-chain?`, options: ordered.map((item) => item.option), answerIndex: ordered.findIndex((item) => item.index === 0), explanation: `Conhecer ${concept.term} ajuda a avaliar riscos e tomar decisões mais conscientes, sem depender de promessas.`, xp: data.xp }
 }
 
+import { recordAnswerToMongo } from './mongoDbService'
+import { getCurrentUser } from './demoAuth'
+
 export function getActivityProgress() {
   const saved = localStorage.getItem(PROGRESS_KEY)
   return saved ? JSON.parse(saved) as { xp: number; completed: number; correct: number; answered: number } : { xp: 0, completed: 0, correct: 0, answered: 0 }
@@ -65,6 +68,17 @@ export function recordAnswer(correct: boolean, xp: number) {
   const progress = getActivityProgress()
   const updated = { xp: progress.xp + (correct ? xp : 0), completed: progress.completed + 1, correct: progress.correct + (correct ? 1 : 0), answered: progress.answered + 1 }
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(updated))
+
+  // Persiste no MongoDB para a conta do usuário
+  const user = getCurrentUser()
+  if (user?.id) {
+    recordAnswerToMongo(user.id, {
+      questionId: `q-${Date.now()}`,
+      isCorrect: correct,
+      xpEarned: correct ? xp : 0,
+    }).catch(() => {})
+  }
+
   return updated
 }
 

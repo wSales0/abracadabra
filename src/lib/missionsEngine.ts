@@ -120,6 +120,9 @@ export const SECURITY_SCENARIOS: SecurityScenario[] = [
   },
 ]
 
+import { recordMissionToMongo } from './mongoDbService'
+import { getCurrentUser } from './demoAuth'
+
 const MISSIONS_STORAGE_KEY = 'abracadabra.completed.missions'
 
 export function getCompletedMissions(): string[] {
@@ -141,5 +144,12 @@ export function completeMission(missionId: string): { newlyCompleted: boolean; c
   if (typeof window !== 'undefined') {
     localStorage.setItem(MISSIONS_STORAGE_KEY, JSON.stringify(updated))
   }
+
+  // Persiste no MongoDB para a conta do aluno
+  const user = getCurrentUser()
+  if (user?.id) {
+    recordMissionToMongo(user.id, missionId).catch(() => {})
+  }
+
   return { newlyCompleted: true, completedList: updated }
 }

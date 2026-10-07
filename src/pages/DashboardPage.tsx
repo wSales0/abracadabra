@@ -14,6 +14,7 @@ import { completeMission, getCompletedMissions } from '../lib/missionsEngine'
 import { StudentMissionsWidget } from '../components/StudentMissionsWidget'
 import { AntiScamSimulator } from '../components/AntiScamSimulator'
 import { CommunityChatPanel } from '../components/CommunityChatPanel'
+import { fetchUserFromMongo, saveUserToMongo } from '../lib/mongoDbService'
 import type { ActivityDifficulty, CryptoHeadline, MarketCoin, UserProfile } from '../types'
 
 type DashboardTab = 'home' | 'wallet' | 'community' | 'profile' | 'activities'
@@ -26,6 +27,21 @@ type DashboardPageProps = {
 export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('home')
   const [user, setUser] = useState(initialUser)
+
+  useEffect(() => {
+    // Sincroniza dados oficiais persistidos no MongoDB
+    if (initialUser?.id) {
+      fetchUserFromMongo(initialUser.id)
+        .then((mongoUser) => {
+          if (mongoUser) {
+            setUser((prev) => ({ ...prev, ...mongoUser }))
+          } else {
+            saveUserToMongo(initialUser).catch(() => {})
+          }
+        })
+        .catch(() => {})
+    }
+  }, [initialUser?.id])
   const [fontSize, setFontSize] = useState<'normal' | 'large' | 'xlarge'>(() => {
     return ((typeof window !== 'undefined' && localStorage.getItem('abracadabra.fontSize')) as any) || 'normal'
   })

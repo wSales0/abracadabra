@@ -1,0 +1,147 @@
+import type { ChatMessage, UserProfile } from '../types'
+
+const BASE_API_URL = typeof window !== 'undefined' ? '' : 'http://localhost:3000'
+
+/**
+ * Salva ou atualiza o perfil do usuário diretamente no MongoDB
+ */
+export async function saveUserToMongo(user: UserProfile): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE_API_URL}/api/user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user),
+    })
+    return res.ok
+  } catch (err) {
+    console.warn('MongoDB saveUser error (offline/fallback):', err)
+    return false
+  }
+}
+
+/**
+ * Busca o perfil de um usuário no MongoDB pelo ID, email ou username
+ */
+export async function fetchUserFromMongo(idOrEmailOrUsername: string): Promise<UserProfile | null> {
+  try {
+    let param = `id=${encodeURIComponent(idOrEmailOrUsername)}`
+    if (idOrEmailOrUsername.includes('@')) {
+      param = `email=${encodeURIComponent(idOrEmailOrUsername)}`
+    }
+
+    const res = await fetch(`${BASE_API_URL}/api/user?${param}`)
+    if (!res.ok) return null
+    return await res.json()
+  } catch (err) {
+    console.warn('MongoDB fetchUser error:', err)
+    return null
+  }
+}
+
+/**
+ * Busca o histórico de mensagens do chat persistidas no MongoDB
+ */
+export async function fetchChatMessagesFromMongo(): Promise<ChatMessage[]> {
+  try {
+    const res = await fetch(`${BASE_API_URL}/api/chat`)
+    if (!res.ok) return []
+    const data = await res.json()
+    return Array.isArray(data) ? data : []
+  } catch (err) {
+    console.warn('MongoDB fetchChat error:', err)
+    return []
+  }
+}
+
+/**
+ * Salva uma nova mensagem do chat no MongoDB
+ */
+export async function saveChatMessageToMongo(msg: ChatMessage): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE_API_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(msg),
+    })
+    return res.ok
+  } catch (err) {
+    console.warn('MongoDB saveChat error:', err)
+    return false
+  }
+}
+
+/**
+ * Busca as missões concluídas de um usuário no MongoDB
+ */
+export async function fetchCompletedMissionsFromMongo(userId: string): Promise<string[]> {
+  try {
+    const res = await fetch(`${BASE_API_URL}/api/missions?userId=${encodeURIComponent(userId)}`)
+    if (!res.ok) return []
+    const data = await res.json()
+    return Array.isArray(data.completedMissions) ? data.completedMissions : []
+  } catch (err) {
+    console.warn('MongoDB fetchMissions error:', err)
+    return []
+  }
+}
+
+/**
+ * Registra uma missão concluída para o usuário no MongoDB
+ */
+export async function recordMissionToMongo(userId: string, missionId: string): Promise<string[] | null> {
+  try {
+    const res = await fetch(`${BASE_API_URL}/api/missions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, missionId }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.completedMissions || null
+  } catch (err) {
+    console.warn('MongoDB recordMission error:', err)
+    return null
+  }
+}
+
+/**
+ * Busca o progresso das atividades do laboratório no MongoDB
+ */
+export async function fetchActivityProgressFromMongo(userId: string): Promise<any | null> {
+  try {
+    const res = await fetch(`${BASE_API_URL}/api/activities?userId=${encodeURIComponent(userId)}`)
+    if (!res.ok) return null
+    return await res.json()
+  } catch (err) {
+    console.warn('MongoDB fetchActivities error:', err)
+    return null
+  }
+}
+
+/**
+ * Salva resposta e ganho de XP de atividade no MongoDB
+ */
+export async function recordAnswerToMongo(
+  userId: string,
+  answerData: {
+    questionId: string
+    isCorrect: boolean
+    category?: string
+    difficulty?: string
+    xpEarned?: number
+  }
+): Promise<any | null> {
+  try {
+    const res = await fetch(`${BASE_API_URL}/api/activities`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, ...answerData }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.progress || null
+  } catch (err) {
+    console.warn('MongoDB recordAnswer error:', err)
+    return null
+  }
+}

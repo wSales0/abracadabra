@@ -1,5 +1,6 @@
 import type { ChatMessage, OnlineStudent, UserProfile } from '../types'
 import mqtt, { type MqttClient } from 'mqtt'
+import { fetchChatMessagesFromMongo, saveChatMessageToMongo } from './mongoDbService'
 
 const CHAT_STORAGE_KEY = 'abracadabra.community.chat.real.v1'
 const BROADCAST_CHANNEL_NAME = 'abracadabra_real_community_channel'
@@ -287,6 +288,16 @@ export function initCommunityRealtime(
 
   bChannel?.addEventListener('message', handleBcMessage)
 
+  // Carrega histórico oficial persistido no MongoDB
+  fetchChatMessagesFromMongo()
+    .then((mongoMsgs) => {
+      if (mongoMsgs && mongoMsgs.length > 0) {
+        saveChatMessagesLocally(mongoMsgs)
+        callbacks.onMessageReceived(mongoMsgs)
+      }
+    })
+    .catch(() => {})
+
   connectBroker(BROKER_PRIMARY)
 
   // Pulso inicial imediato e rajada rápida para descoberta instantânea
@@ -390,6 +401,9 @@ export function sendChatMessage(user: UserProfile, text: string): ChatMessage[] 
 
   const updated = [...current, newMsg]
   saveChatMessagesLocally(updated)
+
+  // Salva no MongoDB em segundo plano
+  saveChatMessageToMongo(newMsg).catch(() => {})
 
   if (mqttClient?.connected) {
     mqttClient.publish(TOPIC_CHAT, JSON.stringify(newMsg))

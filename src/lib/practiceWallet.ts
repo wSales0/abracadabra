@@ -1,5 +1,6 @@
 import type { PracticeTransaction, UserProfile } from '../types'
 import { generateMockDevnetAddress } from './walletAuth'
+import { saveUserToMongo } from './mongoDbService'
 
 const SESSION_KEY = 'abracadabra.demo.session'
 
@@ -100,6 +101,7 @@ export function claimPracticeFaucet(
   }
 
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser))
+  saveUserToMongo(updatedUser).catch(() => {})
   return { updatedUser, transaction: tx }
 }
 
@@ -161,6 +163,7 @@ export function sendPracticeSol(
   }
 
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser))
+  saveUserToMongo(updatedUser).catch(() => {})
   return { success: true, updatedUser, transaction: tx, adjustedNotice }
 }
 
@@ -190,6 +193,7 @@ export function rewardPracticeActivity(
   }
 
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser))
+  saveUserToMongo(updatedUser).catch(() => {})
   return { updatedUser, transaction: tx }
 }
 
@@ -214,6 +218,7 @@ export function resetPracticeWallet(user: UserProfile): UserProfile {
   }
 
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser))
+  saveUserToMongo(updatedUser).catch(() => {})
   return updatedUser
 }
 
@@ -244,6 +249,7 @@ export function receivePracticeSol(
   }
 
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser))
+  saveUserToMongo(updatedUser).catch(() => {})
   return { updatedUser, transaction: tx }
 }
 

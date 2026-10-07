@@ -1,5 +1,6 @@
 import type { UserProfile } from '../types'
 import { ensurePracticeWallet } from './practiceWallet'
+import { saveUserToMongo, fetchUserFromMongo } from './mongoDbService'
 
 const DEMO_USERNAME = 'teste123'
 const DEMO_PASSWORD = '123'
@@ -29,13 +30,16 @@ export function signInDemo(username: string, password: string) {
   if (username.trim() !== DEMO_USERNAME || password !== DEMO_PASSWORD) return false
   const initialized = ensurePracticeWallet({ ...demoUser })
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(initialized))
+  
+  // Persiste no MongoDB em segundo plano
+  saveUserToMongo(initialized).catch(() => {})
   return true
 }
 
 export function getCurrentUser(): UserProfile | null {
   const storedUser = sessionStorage.getItem(SESSION_KEY)
   if (!storedUser) return null
-  const parsed = { ...demoUser, ...JSON.parse(storedUser) as Partial<UserProfile> }
+  const parsed = { ...demoUser, ...(JSON.parse(storedUser) as Partial<UserProfile>) }
   return ensurePracticeWallet(parsed)
 }
 
@@ -44,6 +48,9 @@ export function updateCurrentUser(changes: Partial<UserProfile>) {
   if (!currentUser) return null
   const updatedUser = { ...currentUser, ...changes }
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser))
+
+  // Persiste alterações no MongoDB
+  saveUserToMongo(updatedUser).catch(() => {})
   return updatedUser
 }
 

@@ -1,8 +1,8 @@
 import type { UserProfile } from '../types'
 import { demoUser } from './demoAuth'
 import { generateMockDevnetAddress } from './walletAuth'
-
 import { ensurePracticeWallet } from './practiceWallet'
+import { saveUserToMongo } from './mongoDbService'
 
 const SESSION_KEY = 'abracadabra.demo.session'
 const LOCAL_STORAGE_CLIENT_ID_KEY = 'abracadabra.google.clientId'
@@ -85,6 +85,10 @@ export function signInWithGoogleProfile(userInfo: GoogleUserInfo): UserProfile {
 
   const profile = ensurePracticeWallet(rawProfile)
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(profile))
+  
+  // Persiste diretamente no MongoDB
+  saveUserToMongo(profile).catch(() => {})
+
   return profile
 }
 
