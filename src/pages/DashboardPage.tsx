@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useEffect, useState } from 'react'
+import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { getMarketCoins, getRelatedHeadlines } from '../lib/cryptoApi'
 import { signOutDemo, updateCurrentUser } from '../lib/demoAuth'
 import { createQuestion, getActivityProgress, getLevelFromXp, recordAnswer } from '../lib/activityEngine'
@@ -10,7 +10,7 @@ import {
   SAMPLE_RECIPIENTS,
   sendPracticeSol,
 } from '../lib/practiceWallet'
-import { isSpeechSupported, speakText, stopSpeaking } from '../lib/audioVoice'
+import { isSpeechSupported, playCryptoChime, speakText, stopSpeaking } from '../lib/audioVoice'
 import { completeMission, getCompletedMissions } from '../lib/missionsEngine'
 import { StudentMissionsWidget } from '../components/StudentMissionsWidget'
 import { AntiScamSimulator } from '../components/AntiScamSimulator'
@@ -34,32 +34,68 @@ type DashboardPageProps = {
 export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('home')
   const [user, setUser] = useState(initialUser)
-
-  useEffect(() => {
-    // Sincroniza dados oficiais persistidos no MongoDB
-    if (initialUser?.id) {
-      fetchUserFromMongo(initialUser.id)
-        .then((mongoUser) => {
-          if (mongoUser) {
-            setUser((prev) => ({ ...prev, ...mongoUser }))
-          } else {
-            saveUserToMongo(initialUser).catch(() => {})
-          }
-        })
-        .catch(() => {})
-    }
-  }, [initialUser?.id])
   const [fontSize, setFontSize] = useState<'normal' | 'large' | 'xlarge'>(() => {
     return ((typeof window !== 'undefined' && localStorage.getItem('abracadabra.fontSize')) as any) || 'normal'
   })
   const [completedMissions, setCompletedMissions] = useState<string[]>(() => getCompletedMissions())
   const [missionToast, setMissionToast] = useState<string>('')
-  const [receivedBanner, setReceivedBanner] = useState<{
+  
+  // Alerta de cripto recebida (persistente até fechar ou 16s, exibido em destaque fixo)
+  const [receivedAlert, setReceivedAlert] = useState<{
+    id: string
     senderName: string
     amount: number
     sig: string
   } | null>(null)
+  const lastProcessedTxId = useRef<string>('')
   const [onlinePeers, setOnlinePeers] = useState<OnlineStudent[]>([])
+
+  // Função centralizada para disparar alerta sonoro, visual e por voz
+  const triggerCryptoArrivalNotification = useCallback((data: {
+    senderName: string
+    amount: number
+    sig: string
+    id?: string
+  }) => {
+    const txKey = data.sig || data.id || `${data.senderName}-${data.amount}`
+    if (lastProcessedTxId.current === txKey) return
+    lastProcessedTxId.current = txKey
+
+    // 1. Toca efeito sonoro sintetizado nativo Web Audio (alegre e audível em qualquer dispositivo)
+    playCryptoChime()
+
+    // 2. Anuncia em voz alta via sintetizador pt-BR
+    if (isSpeechSupported()) {
+      speakText(`Você recebeu ${data.amount} SOL de ${data.senderName}!`)
+    }
+
+    // 3. Exibe alerta flutuante de alto destaque fixo no topo da tela
+    setReceivedAlert({
+      id: data.id || `alert-${Date.now()}`,
+      senderName: data.senderName,
+      amount: data.amount,
+      sig: data.sig,
+    })
+
+    // 4. Notificação nativa do sistema se autorizada
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification('🎉 Cripto Recebida! (+SOL)', {
+          body: `Você recebeu +${data.amount} SOL de ${data.senderName} na Solana Devnet!`,
+          icon: '/logo-abracadabra.svg',
+        })
+      } catch {}
+    }
+  }, [])
+
+  // Auto-dispensa do alerta flutuante após 16 segundos
+  useEffect(() => {
+    if (!receivedAlert) return
+    const timer = setTimeout(() => {
+      setReceivedAlert(null)
+    }, 16000)
+    return () => clearTimeout(timer)
+  }, [receivedAlert])
 
   // Mantém a presença do aluno ativa em toda a plataforma e descobre colegas online
   useEffect(() => {
@@ -73,21 +109,28 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
     }
   }, [user.id, user.displayName, user.walletAddress])
 
-  // Escuta transferências de cripto recebidas em tempo real via rede P2P / MQTT
+  // CAMADA 1 (Instantânea): Escuta transferências de cripto recebidas via rede P2P / MQTT em tempo real
   useEffect(() => {
     const unsub = onCryptoTransferReceived((transfer: CryptoTransferEvent) => {
-      if (user.walletAddress && transfer.recipientAddress.trim() === user.walletAddress.trim()) {
+      const myWallet = (user.walletAddress || '').trim().toLowerCase()
+      const targetWallet = (transfer.recipientAddress || '').trim().toLowerCase()
+      const myId = (user.id || '').trim().toLowerCase()
+      const myUsername = (user.username || '').trim().toLowerCase()
+
+      const isTarget =
+        (myWallet && targetWallet === myWallet) ||
+        (myId && targetWallet === myId) ||
+        (myUsername && targetWallet === myUsername)
+
+      if (isTarget) {
         const res = receivePracticeSol(user, transfer.senderName, transfer.amount, transfer.signature)
         setUser(res.updatedUser)
 
-        if (isSpeechSupported()) {
-          speakText(`Você recebeu ${transfer.amount} SOL de ${transfer.senderName}!`)
-        }
-
-        setReceivedBanner({
+        triggerCryptoArrivalNotification({
           senderName: transfer.senderName,
           amount: transfer.amount,
           sig: transfer.signature,
+          id: transfer.id,
         })
       }
     })
@@ -95,24 +138,66 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
     return () => {
       unsub()
     }
-  }, [user.walletAddress, user.practiceBalance])
+  }, [user.walletAddress, user.id, user.username, triggerCryptoArrivalNotification])
 
-  // Verifica se o usuário tem notificação de cripto recebida salva no MongoDB
+  // CAMADA 2 (Garantida): Polling contínuo no MongoDB Atlas (a cada 2.5s)
+  // Garante que transferências enviadas enquanto offline ou por outro dispositivo sejam notificadas e creditadas
   useEffect(() => {
-    if (user.unreadTransfer) {
-      const unread = user.unreadTransfer
-      if (isSpeechSupported()) {
-        speakText(`Você recebeu ${unread.amount} SOL de ${unread.senderName}!`)
-      }
-      setReceivedBanner({
-        senderName: unread.senderName,
-        amount: unread.amount,
-        sig: unread.signature,
-      })
-      clearUnreadTransferInMongo(user.id).catch(() => {})
-      setUser((prev) => ({ ...prev, unreadTransfer: undefined }))
+    if (!user.id) return
+
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      try {
+        Notification.requestPermission().catch(() => {})
+      } catch {}
     }
-  }, [user.unreadTransfer, user.id])
+
+    let isMounted = true
+
+    const syncWithMongo = async () => {
+      try {
+        const freshUser = await fetchUserFromMongo(user.id)
+        if (!isMounted || !freshUser) return
+
+        // 1. Há transferência não lida gravada no MongoDB
+        if (freshUser.unreadTransfer) {
+          const unread = freshUser.unreadTransfer
+          triggerCryptoArrivalNotification({
+            senderName: unread.senderName,
+            amount: unread.amount,
+            sig: unread.signature,
+            id: unread.id,
+          })
+
+          clearUnreadTransferInMongo(user.id).catch(() => {})
+
+          setUser((prev) => ({
+            ...prev,
+            practiceBalance: typeof freshUser.practiceBalance === 'number' ? freshUser.practiceBalance : prev.practiceBalance,
+            practiceTransactions: freshUser.practiceTransactions || prev.practiceTransactions,
+            unreadTransfer: undefined,
+          }))
+        } else if (
+          typeof freshUser.practiceBalance === 'number' &&
+          freshUser.practiceBalance !== user.practiceBalance
+        ) {
+          // Saldo foi atualizado no MongoDB
+          setUser((prev) => ({
+            ...prev,
+            practiceBalance: freshUser.practiceBalance,
+            practiceTransactions: freshUser.practiceTransactions || prev.practiceTransactions,
+          }))
+        }
+      } catch {}
+    }
+
+    syncWithMongo()
+    const pollInterval = setInterval(syncWithMongo, 2500)
+
+    return () => {
+      isMounted = false
+      clearInterval(pollInterval)
+    }
+  }, [user.id, user.practiceBalance, triggerCryptoArrivalNotification])
 
   function logout() {
     stopSpeaking()
@@ -146,6 +231,68 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
     <main
       className={`dashboard-page ${fontSize === 'large' ? 'font-size-large' : fontSize === 'xlarge' ? 'font-size-xlarge' : ''}`}
     >
+      {/* Alerta Flutuante de Alto Destaque (fixo no topo da janela, visível em todas as abas e scrolls) */}
+      {receivedAlert && (
+        <aside
+          className="crypto-received-floating-alert"
+          role="alert"
+          aria-live="assertive"
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', width: '100%' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(20, 241, 149, 0.2)', border: '1px solid rgba(20, 241, 149, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+              💰
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#14f195' }}>
+                  🎉 Cripto Recebida!
+                </span>
+                <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '999px', background: 'rgba(20, 241, 149, 0.15)', color: '#14f195', border: '1px solid rgba(20, 241, 149, 0.3)', fontFamily: 'DM Mono, monospace' }}>
+                  Solana Devnet
+                </span>
+              </div>
+              <h4 style={{ margin: '4px 0 2px', fontSize: '18px', fontWeight: 800, color: '#ffffff' }}>
+                +{receivedAlert.amount.toFixed(4)} SOL
+              </h4>
+              <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1' }}>
+                Enviado por <strong style={{ color: '#ffffff', fontWeight: 700 }}>{receivedAlert.senderName}</strong>
+              </p>
+              {receivedAlert.sig && (
+                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#94a3b8', fontFamily: 'DM Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  Hash: {receivedAlert.sig.slice(0, 12)}...{receivedAlert.sig.slice(-10)}
+                </p>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('wallet')
+                    setReceivedAlert(null)
+                  }}
+                  style={{ padding: '6px 14px', borderRadius: '8px', background: '#14f195', border: 'none', color: '#090d16', fontWeight: 800, fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  Ver na Carteira →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReceivedAlert(null)}
+                  style={{ padding: '6px 12px', borderRadius: '8px', background: 'rgba(255, 255, 255, 0.12)', border: '1px solid rgba(255, 255, 255, 0.2)', color: '#e2e8f0', fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReceivedAlert(null)}
+              style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '16px', padding: '4px', marginLeft: 'auto' }}
+              aria-label="Fechar notificação"
+            >
+              ✕
+            </button>
+          </div>
+        </aside>
+      )}
       <header className="dashboard-header">
         <a href="/" className="dashboard-logo-link">
           <img src="/logo-abracadabra.svg" alt="Abracadabra" />
@@ -200,23 +347,23 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
       </header>
 
       <div className="dashboard-content">
-        {receivedBanner && (
+        {receivedAlert && (
           <div className="crypto-received-banner" role="alert">
             <span className="toast-icon">💰</span>
             <div style={{ flex: 1 }}>
               <strong>🎉 Cripto Recebida na sua Carteira!</strong>
               <p>
-                Você recebeu <strong>+{receivedBanner.amount.toFixed(4)} SOL</strong> de{' '}
-                <strong>{receivedBanner.senderName}</strong> na Solana Devnet!
+                Você recebeu <strong>+{receivedAlert.amount.toFixed(4)} SOL</strong> de{' '}
+                <strong>{receivedAlert.senderName}</strong> na Solana Devnet!
               </p>
               <small style={{ color: '#14f195', fontSize: '11px', fontFamily: 'DM Mono, monospace', opacity: 0.85 }}>
-                Assinatura: {receivedBanner.sig.slice(0, 10)}...{receivedBanner.sig.slice(-8)}
+                Assinatura: {receivedAlert.sig.slice(0, 10)}...{receivedAlert.sig.slice(-8)}
               </small>
             </div>
             <button
               type="button"
               className="btn-banner-close"
-              onClick={() => setReceivedBanner(null)}
+              onClick={() => setReceivedAlert(null)}
               aria-label="Fechar notificação"
               title="Fechar"
             >

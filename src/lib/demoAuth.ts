@@ -31,8 +31,16 @@ export function signInDemo(username: string, password: string) {
   const initialized = ensurePracticeWallet({ ...demoUser })
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(initialized))
   
-  // Persiste no MongoDB em segundo plano
-  saveUserToMongo(initialized).catch(() => {})
+  // Preserva saldo real e transferências não lidas já existentes no MongoDB
+  fetchUserFromMongo(demoUser.id)
+    .then((existing) => {
+      if (existing) {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(existing))
+      } else {
+        saveUserToMongo(initialized).catch(() => {})
+      }
+    })
+    .catch(() => {})
   return true
 }
 

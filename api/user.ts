@@ -74,14 +74,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const id = req.query.id as string
       const email = req.query.email as string
       const username = req.query.username as string
+      const wallet = req.query.wallet as string
 
       let filter: any = null
       if (id) filter = { id }
       else if (email) filter = { email }
       else if (username) filter = { username }
+      else if (wallet) filter = { walletAddress: wallet }
 
       if (!filter) {
-        return res.status(400).json({ error: 'Parâmetro id, email ou username é obrigatório' })
+        return res.status(400).json({ error: 'Parâmetro id, email, username ou wallet é obrigatório' })
       }
 
       const user = await usersCol.findOne(filter)
@@ -102,7 +104,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const numAmount = Number(amount)
-        const recipientDoc = await usersCol.findOne({ walletAddress: recipientAddress })
+        const cleanRecipient = String(recipientAddress).trim()
+        const safeEscaped = cleanRecipient.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+        const recipientDoc = await usersCol.findOne({
+          $or: [
+            { walletAddress: cleanRecipient },
+            { walletAddress: { $regex: new RegExp(`^${safeEscaped}$`, 'i') } },
+            { id: cleanRecipient },
+            { username: cleanRecipient },
+            { email: cleanRecipient }
+          ]
+        })
 
         if (recipientDoc) {
           const currentBalance = typeof recipientDoc.practiceBalance === 'number' ? recipientDoc.practiceBalance : 2.5
@@ -150,7 +163,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (action === 'clear_unread_transfer') {
         const { userId } = req.body || {}
         if (userId) {
-          await usersCol.updateOne({ id: userId }, { $unset: { unreadTransfer: '' } })
+          const cleanId = String(userId).trim()
+          await usersCol.updateOne(
+            {
+              $or: [
+                { id: cleanId },
+                { walletAddress: cleanId },
+                { username: cleanId }
+              ]
+            },
+            { $unset: { unreadTransfer: '' } }
+          )
         }
         return res.status(200).json({ success: true })
       }

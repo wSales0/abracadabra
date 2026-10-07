@@ -3335,6 +3335,23 @@ a { color: #9189a7; text-decoration: underline; text-underline-offset: 3px; }
   transform: scale(1.08);
 }
 
+/* Alerta Flutuante de Alto Destaque (fixo no topo da tela, visível em todas as abas e scrolls) */
+.crypto-received-floating-alert {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 999999 !important;
+  max-width: 440px;
+  width: calc(100vw - 40px);
+  background: rgba(15, 23, 42, 0.96) !important;
+  border: 2px solid #14f195 !important;
+  border-radius: 20px !important;
+  padding: 16px 20px !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 35px rgba(20, 241, 149, 0.35) !important;
+  backdrop-filter: blur(14px) !important;
+  animation: slide-in-top 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
 .modal-no-recipients {
   background: rgba(250, 204, 21, 0.1);
   border: 1px solid rgba(250, 204, 21, 0.3);

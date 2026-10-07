@@ -2,7 +2,7 @@ import type { UserProfile } from '../types'
 import { demoUser } from './demoAuth'
 import { generateMockDevnetAddress } from './walletAuth'
 import { ensurePracticeWallet } from './practiceWallet'
-import { saveUserToMongo } from './mongoDbService'
+import { saveUserToMongo, fetchUserFromMongo } from './mongoDbService'
 
 const SESSION_KEY = 'abracadabra.demo.session'
 const LOCAL_STORAGE_CLIENT_ID_KEY = 'abracadabra.google.clientId'
@@ -61,17 +61,25 @@ export interface GoogleUserInfo {
   sub?: string
 }
 
-export function signInWithGoogleProfile(userInfo: GoogleUserInfo): UserProfile {
+export async function signInWithGoogleProfile(userInfo: GoogleUserInfo): Promise<UserProfile> {
   const email = userInfo.email.trim()
   const namePart = userInfo.name || email.split('@')[0]
   const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '_')
   const avatarUrl = userInfo.picture || `https://api.dicebear.com/7.x/bottts/svg?seed=${email}`
+  const userId = `google-${userInfo.sub || username}`
 
-  const embeddedWalletAddress = generateMockDevnetAddress()
+  // Busca se já existe no MongoDB para manter a chave pública original e o saldo
+  let existing: UserProfile | null = null
+  try {
+    existing = (await fetchUserFromMongo(userId)) || (await fetchUserFromMongo(email))
+  } catch {}
+
+  const embeddedWalletAddress = existing?.walletAddress || generateMockDevnetAddress()
 
   const rawProfile: UserProfile = {
     ...demoUser,
-    id: `google-${userInfo.sub || username}`,
+    ...(existing || {}),
+    id: userId,
     username,
     displayName: namePart,
     email,
@@ -80,7 +88,10 @@ export function signInWithGoogleProfile(userInfo: GoogleUserInfo): UserProfile {
     walletAddress: embeddedWalletAddress,
     walletProvider: 'Carteira de Prática (Solana Devnet)',
     network: 'Solana Devnet (Simulada)',
-    bio: `Aluno autenticado via conta oficial Google (${email}). Carteira prática ativa com 2.5 SOL de teste.`,
+    bio: existing?.bio || `Aluno autenticado via conta oficial Google (${email}). Carteira prática ativa.`,
+    practiceBalance: typeof existing?.practiceBalance === 'number' ? existing.practiceBalance : 2.5,
+    practiceTransactions: existing?.practiceTransactions || [],
+    unreadTransfer: existing?.unreadTransfer,
   }
 
   const profile = ensurePracticeWallet(rawProfile)
@@ -174,7 +185,7 @@ export async function requestOfficialGoogleLogin({
               throw new Error('Falha ao obter perfil do Google')
             }
             const data = await res.json()
-            const profile = signInWithGoogleProfile({
+            const profile = await signInWithGoogleProfile({
               email: data.email,
               name: data.name,
               picture: data.picture,
