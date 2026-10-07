@@ -1,10 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
 
-:root { font-family: 'Manrope', sans-serif; color: #f7f7fb; background: #09090f; font-synthesis: none; text-rendering: optimizeLegibility; }
-* { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; background: #09090f; }
-button, input { font: inherit; }
-button { cursor: pointer; }
+@theme {
+  --color-primary: #7c3aed;
+  --color-primary-light: #a87eff;
+  --color-solana-green: #14f195;
+  --color-dark-bg: #09090f;
+  --font-sans: 'Manrope', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+@layer base {
+  :root {
+    font-family: var(--font-sans);
+    color: #f7f7fb;
+    background-color: var(--color-dark-bg);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    min-width: 320px;
+    background-color: var(--color-dark-bg);
+  }
+  button, input, select, textarea {
+    font: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+}
+
+@layer components {
 .page-shell { min-height: 100dvh; display: grid; grid-template-columns: 1.08fr .92fr; position: relative; overflow: hidden; isolation: isolate; background: radial-gradient(circle at 5% 100%, rgba(124,58,237,.17), transparent 36%), #09090f; }
 .ambient { position: absolute; border-radius: 50%; filter: blur(1px); pointer-events: none; z-index: -1; }
 .ambient-one { width: 530px; height: 530px; left: -210px; top: 34%; background: radial-gradient(circle, rgba(124,58,237,.14), transparent 68%); }
@@ -3306,5 +3335,4 @@ a { color: #9189a7; text-decoration: underline; text-underline-offset: 3px; }
   font-size: 11px;
   color: #d1cae2;
 }
-
-
+}

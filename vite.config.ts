@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 // Middleware para executar os endpoints serverless da pasta /api durante o npm run dev
 function apiDevPlugin(): Plugin {
@@ -62,5 +63,5 @@ function apiDevPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), apiDevPlugin()],
+  plugins: [react(), tailwindcss(), apiDevPlugin()],
 })
