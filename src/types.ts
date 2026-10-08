@@ -5,13 +5,27 @@ export type UserPreferences = {
 
 export interface PracticeTransaction {
   id: string
-  type: 'faucet' | 'send' | 'receive' | 'reward'
+  type: 'faucet' | 'send' | 'receive' | 'reward' | 'swap' | 'stake' | 'unstake'
   amount: number
   signature: string
   toOrFrom: string
   timestamp: string
   status: 'confirmada' | 'processando'
   fee?: number
+  tokenSymbol?: string
+}
+
+export interface WalletTokens {
+  USDC: number
+  ABRA: number
+  BTC: number
+}
+
+export interface NftCertificateData {
+  minted: boolean
+  mintAddress?: string
+  mintedAt?: string
+  title: string
 }
 
 export interface ChatTransfer {
@@ -86,6 +100,12 @@ export type UserProfile = {
   unreadTransfer?: UnreadTransferNotification
   soundEffectsEnabled?: boolean
   speechEnabled?: boolean
+  tokens?: WalletTokens
+  stakedBalance?: number
+  stakedAt?: string
+  stakingRewards?: number
+  badges?: string[]
+  nftCertificate?: NftCertificateData
 }
 
 export interface LeaderboardUser {

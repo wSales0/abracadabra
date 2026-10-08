@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from 'react'
-import { getMarketCoins, getRelatedHeadlines } from '../lib/cryptoApi'
+import { getMarketCoins, getRelatedHeadlines, getSolanaPrice, type SolanaPriceData } from '../lib/cryptoApi'
 import { signOutDemo, updateCurrentUser } from '../lib/demoAuth'
 import { createQuestion, getActivityProgress, getLevelFromXp, recordAnswer } from '../lib/activityEngine'
 import {
@@ -27,6 +27,12 @@ import { broadcastCryptoTransfer, initCommunityRealtime, onCryptoTransferReceive
 import { BlockExplorerModal } from '../components/BlockExplorerModal'
 import { WalletQrModal } from '../components/WalletQrModal'
 import { LeaderboardWidget } from '../components/LeaderboardWidget'
+import { DexSwapWidget } from '../components/DexSwapWidget'
+import { StakingWidget } from '../components/StakingWidget'
+import { CurrencyConverterWidget } from '../components/CurrencyConverterWidget'
+import { SeedPhraseGame } from '../components/SeedPhraseGame'
+import { DiagnosticsLab } from '../components/DiagnosticsLab'
+import { BadgesAndCertificateWidget } from '../components/BadgesAndCertificateWidget'
 import type { ActivityDifficulty, CryptoHeadline, CryptoTransferEvent, MarketCoin, OnlineStudent, PracticeTransaction, UserProfile } from '../types'
 
 type DashboardTab = 'home' | 'wallet' | 'community' | 'ranking' | 'activities' | 'profile'
@@ -44,6 +50,23 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
   })
   const [completedMissions, setCompletedMissions] = useState<string[]>(() => getCompletedMissions())
   const [missionToast, setMissionToast] = useState<string>('')
+  const [solPrice, setSolPrice] = useState<SolanaPriceData | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+    getSolanaPrice().then((p) => {
+      if (isMounted) setSolPrice(p)
+    })
+    const timer = setInterval(() => {
+      getSolanaPrice().then((p) => {
+        if (isMounted) setSolPrice(p)
+      })
+    }, 35000)
+    return () => {
+      isMounted = false
+      clearInterval(timer)
+    }
+  }, [])
   
   // Alerta de cripto recebida (persistente até fechar ou 16s, exibido em destaque fixo)
   const [receivedAlert, setReceivedAlert] = useState<{
@@ -433,6 +456,11 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
             <span className="badge-pulse" />
             <span className="badge-icon">🧪</span>
             <span className="badge-balance">{balance.toFixed(2)} SOL</span>
+            {solPrice && (
+              <span className="badge-brl-equiv">
+                ≈ R$ {(balance * solPrice.brl).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            )}
             <span className="badge-net">Devnet</span>
           </button>
 
@@ -779,6 +807,18 @@ function PracticeWalletPanel({
   const [speakingId, setSpeakingId] = useState<string | null>(null)
   const [selectedExplorerTx, setSelectedExplorerTx] = useState<PracticeTransaction | null>(null)
   const [showQrModal, setShowQrModal] = useState(false)
+  const [walletSubTab, setWalletSubTab] = useState<'send' | 'swap' | 'staking' | 'converter'>('send')
+  const [liveSolPrice, setLiveSolPrice] = useState<number>(890.5)
+
+  useEffect(() => {
+    let isMounted = true
+    getSolanaPrice().then((p) => {
+      if (isMounted && p?.brl) setLiveSolPrice(p.brl)
+    })
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const balance = user.practiceBalance ?? 2.5
   const address = user.walletAddress || 'Abr4CadAbRaDevnEtWaLLeT99182374619283741234'
@@ -941,7 +981,7 @@ function PracticeWalletPanel({
               <span>SOL</span>
             </div>
             <small className="wallet-balance-usd">
-              ≈ {(balance * 145).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} (cotação simulada)
+              ≈ {(balance * liveSolPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} (cotação ao vivo)
             </small>
           </div>
 
@@ -985,8 +1025,64 @@ function PracticeWalletPanel({
         {resetNotice && <div className="wallet-notice-banner info">{resetNotice}</div>}
       </div>
 
-      {/* Seção Nova: Tradutor do Cotidiano (Analogias do Mundo Real) */}
-      <div className="analogies-section">
+      {/* Sub-navegação interna da Carteira Prática */}
+      <div className="wallet-subtab-bar">
+        <button
+          type="button"
+          className={`wallet-subtab-btn ${walletSubTab === 'send' ? 'active' : ''}`}
+          onClick={() => setWalletSubTab('send')}
+        >
+          📤 Transferir SOL &amp; Pix Cripto
+        </button>
+        <button
+          type="button"
+          className={`wallet-subtab-btn ${walletSubTab === 'swap' ? 'active' : ''}`}
+          onClick={() => setWalletSubTab('swap')}
+        >
+          🔄 Trocar Tokens (DEX Swap)
+        </button>
+        <button
+          type="button"
+          className={`wallet-subtab-btn ${walletSubTab === 'staking' ? 'active' : ''}`}
+          onClick={() => setWalletSubTab('staking')}
+        >
+          🌱 Staking Educativo (PoS)
+        </button>
+        <button
+          type="button"
+          className={`wallet-subtab-btn ${walletSubTab === 'converter' ? 'active' : ''}`}
+          onClick={() => setWalletSubTab('converter')}
+        >
+          💵 Cotação &amp; Conversor SOL ↔ R$
+        </button>
+      </div>
+
+      {walletSubTab === 'swap' && (
+        <DexSwapWidget
+          user={user}
+          onSave={onSave}
+          onTriggerMission={onTriggerMission}
+          onOpenExplorer={(tx) => setSelectedExplorerTx(tx)}
+        />
+      )}
+
+      {walletSubTab === 'staking' && (
+        <StakingWidget
+          user={user}
+          onSave={onSave}
+          onTriggerMission={onTriggerMission}
+          onOpenExplorer={(tx) => setSelectedExplorerTx(tx)}
+        />
+      )}
+
+      {walletSubTab === 'converter' && (
+        <CurrencyConverterWidget userBalance={balance} />
+      )}
+
+      {walletSubTab === 'send' && (
+        <>
+          {/* Seção Nova: Tradutor do Cotidiano (Analogias do Mundo Real) */}
+          <div className="analogies-section">
         <div className="dashboard-section-heading">
           <div>
             <p className="dashboard-kicker">TRADUTOR DO COTIDIANO</p>
@@ -1432,6 +1528,8 @@ function PracticeWalletPanel({
           </div>
         </div>
       </div>
+    </>
+  )}
 
       {/* Histórico de Transações */}
       <div className="tx-history-section">
@@ -1451,7 +1549,19 @@ function PracticeWalletPanel({
               <div key={tx.id} className={`tx-card ${tx.type}`}>
                 <div className="tx-type-col">
                   <span className="tx-type-icon">
-                    {tx.type === 'faucet' ? '💧' : tx.type === 'send' ? '📤' : tx.type === 'reward' ? '🏆' : '📥'}
+                    {tx.type === 'faucet'
+                      ? '💧'
+                      : tx.type === 'send'
+                      ? '📤'
+                      : tx.type === 'reward'
+                      ? '🏆'
+                      : tx.type === 'swap'
+                      ? '🔄'
+                      : tx.type === 'stake'
+                      ? '🌱'
+                      : tx.type === 'unstake'
+                      ? '🔓'
+                      : '📥'}
                   </span>
                   <div>
                     <strong>
@@ -1461,6 +1571,12 @@ function PracticeWalletPanel({
                         ? 'Envio Transferido'
                         : tx.type === 'reward'
                         ? 'Recompensa de Estudo'
+                        : tx.type === 'swap'
+                        ? 'DEX Swap'
+                        : tx.type === 'stake'
+                        ? 'Staking Trava'
+                        : tx.type === 'unstake'
+                        ? 'Staking Resgate'
                         : 'Recebimento'}
                     </strong>
                     <small>{formatTxDate(tx.timestamp)}</small>
@@ -1480,8 +1596,20 @@ function PracticeWalletPanel({
                 </div>
 
                 <div className="tx-amount-col">
-                  <strong className={tx.type === 'send' ? 'amount-negative' : 'amount-positive'}>
-                    {tx.type === 'send' ? `-${tx.amount.toFixed(4)} SOL` : `+${tx.amount.toFixed(4)} SOL`}
+                  <strong
+                    className={
+                      tx.type === 'send' || tx.type === 'stake'
+                        ? 'amount-negative'
+                        : tx.type === 'swap'
+                        ? 'amount-neutral'
+                        : 'amount-positive'
+                    }
+                  >
+                    {tx.type === 'send' || tx.type === 'stake'
+                      ? `-${tx.amount.toFixed(4)} SOL`
+                      : tx.type === 'swap'
+                      ? `${tx.amount} ${tx.tokenSymbol || 'SOL'}`
+                      : `+${tx.amount.toFixed(4)} SOL`}
                   </strong>
                   {typeof tx.fee === 'number' && tx.fee > 0 && <small className="tx-fee">Taxa: {tx.fee.toFixed(6)} SOL</small>}
                 </div>
@@ -1551,6 +1679,7 @@ function ProfilePanel({
   const [speechEnabled, setSpeechEnabled] = useState(user.speechEnabled ?? true)
   const [saved, setSaved] = useState(false)
   const [copiedAddr, setCopiedAddr] = useState(false)
+  const [explorerTx, setExplorerTx] = useState<PracticeTransaction | null>(null)
 
   const balance = user.practiceBalance ?? 2.5
   const address = user.walletAddress || 'Abr4CadAbRaDevnEtWaLLeT99182374619283741234'
@@ -1634,6 +1763,13 @@ function ProfilePanel({
         </button>
       </div>
 
+      {/* Galeria de Conquistas & Certificado NFT */}
+      <BadgesAndCertificateWidget
+        user={user}
+        onSave={onSave}
+        onOpenExplorer={(tx) => setExplorerTx(tx)}
+      />
+
       <div className="profile-editor">
         <div className="profile-editor-top">
           <label className="profile-avatar large-avatar" htmlFor="avatar-upload">
@@ -1709,6 +1845,7 @@ function ProfilePanel({
       <button className="logout-button" onClick={onLogout}>
         Sair da conta
       </button>
+      {explorerTx && <BlockExplorerModal tx={explorerTx} onClose={() => setExplorerTx(null)} />}
     </section>
   )
 }
@@ -1722,7 +1859,7 @@ function ActivitiesPanel({
   onSave: (changes: Partial<UserProfile>) => void
   onTriggerMission: (missionId: string, msg?: string) => void
 }) {
-  const [activityMode, setActivityMode] = useState<'quiz' | 'antiscam'>('quiz')
+  const [activityMode, setActivityMode] = useState<'quiz' | 'antiscam' | 'seedphrase' | 'diagnostics'>('quiz')
   const [difficulty, setDifficulty] = useState<ActivityDifficulty>('iniciante')
   const [question, setQuestion] = useState(() => createQuestion('iniciante'))
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
@@ -1792,7 +1929,7 @@ function ActivitiesPanel({
         </div>
       </div>
 
-      {/* Seletor de Modo: Quiz vs Simulador Anti-Golpe */}
+      {/* Seletor de Modo: Quiz vs Anti-Golpe vs Seed Phrase vs Diagnóstico */}
       <div className="activity-mode-pills">
         <button
           type="button"
@@ -1808,15 +1945,55 @@ function ActivitiesPanel({
         >
           🛡️ Simulador Anti-Golpe (Cilada ou Seguro?)
         </button>
+        <button
+          type="button"
+          className={`mode-pill-btn ${activityMode === 'seedphrase' ? 'active' : ''}`}
+          onClick={() => setActivityMode('seedphrase')}
+        >
+          🔐 Cofre 12 Palavras (Seed Phrase)
+        </button>
+        <button
+          type="button"
+          className={`mode-pill-btn ${activityMode === 'diagnostics' ? 'active' : ''}`}
+          onClick={() => setActivityMode('diagnostics')}
+        >
+          🩺 Diagnóstico de Falhas On-Chain
+        </button>
       </div>
 
-      {activityMode === 'antiscam' ? (
+      {activityMode === 'antiscam' && (
         <AntiScamSimulator
           onComplete={() => {
             onTriggerMission('mission_security_test', '🏆 Missão 5 Concluída: Escudo Anti-Golpe conquistado!')
           }}
         />
-      ) : (
+      )}
+
+      {activityMode === 'seedphrase' && (
+        <SeedPhraseGame
+          onComplete={() => {
+            onTriggerMission('mission_seed_phrase', '🏆 Missão Concluída: Guardião da Frase Secreta conquistado!')
+          }}
+          onRewardXp={(xpAmount) => {
+            const nextXp = (user.xp || 0) + xpAmount
+            onSave({ xp: nextXp, level: getLevelFromXp(nextXp).label })
+          }}
+        />
+      )}
+
+      {activityMode === 'diagnostics' && (
+        <DiagnosticsLab
+          onComplete={() => {
+            onTriggerMission('mission_diagnostics', '🏆 Missão Concluída: Médico da Blockchain conquistado!')
+          }}
+          onRewardXp={(xpAmount) => {
+            const nextXp = (user.xp || 0) + xpAmount
+            onSave({ xp: nextXp, level: getLevelFromXp(nextXp).label })
+          }}
+        />
+      )}
+
+      {activityMode === 'quiz' && (
         <>
           <div className="activity-stats">
             <div>
