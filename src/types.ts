@@ -1,5 +1,3 @@
-export type UserPlan = 'base' | 'premium'
-
 export type UserPreferences = {
   focus: string
   weeklyDigest: boolean
@@ -75,7 +73,6 @@ export type UserProfile = {
   streak: number
   xp: number
   completedActivities: number
-  plan: UserPlan
   preferences: UserPreferences
   email?: string
   authProvider?: string

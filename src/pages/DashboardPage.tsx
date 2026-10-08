@@ -1,7 +1,7 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { getMarketCoins, getRelatedHeadlines } from '../lib/cryptoApi'
 import { signOutDemo, updateCurrentUser } from '../lib/demoAuth'
-import { createQuestion, getActivityProgress, getLevelFromXp, recordAnswer, canAccessActivity, getRequiredLevel, getDifficultyLockMessage } from '../lib/activityEngine'
+import { createQuestion, getActivityProgress, getLevelFromXp, recordAnswer } from '../lib/activityEngine'
 import {
   claimPracticeFaucet,
   receivePracticeSol,
@@ -1729,21 +1729,8 @@ function ActivitiesPanel({
   const [progress, setProgress] = useState(getActivityProgress())
   const [feedback, setFeedback] = useState(false)
   const level = getLevelFromXp(progress.xp)
-  const userPlan = user.plan ?? 'base'
-  const isPremium = userPlan === 'premium'
-  const [premiumNotice, setPremiumNotice] = useState('')
-
-  function isUnlocked(option: ActivityDifficulty) {
-    return canAccessActivity(option, level.level, userPlan)
-  }
-
-  function activatePremiumDemo() {
-    onSave({ plan: 'premium' })
-    setPremiumNotice('Premium de demonstração ativado! Todas as dificuldades estão liberadas.')
-  }
 
   function changeDifficulty(nextDifficulty: ActivityDifficulty) {
-    if (!isUnlocked(nextDifficulty)) return
     setDifficulty(nextDifficulty)
     setQuestion(createQuestion(nextDifficulty))
     setSelectedAnswer(null)
@@ -1751,7 +1738,7 @@ function ActivitiesPanel({
   }
 
   function answer(index: number) {
-    if (selectedAnswer !== null || !isUnlocked(question.difficulty)) return
+    if (selectedAnswer !== null) return
     setSelectedAnswer(index)
     const correct = index === question.answerIndex
     const nextProgress = recordAnswer(correct, question.xp)
@@ -1779,9 +1766,7 @@ function ActivitiesPanel({
   }
 
   function nextQuestion() {
-    const availableDifficulty = isUnlocked(difficulty) ? difficulty : 'iniciante'
-    setDifficulty(availableDifficulty)
-    setQuestion(createQuestion(availableDifficulty))
+    setQuestion(createQuestion(difficulty))
     setSelectedAnswer(null)
     setFeedback(false)
   }
@@ -1800,30 +1785,12 @@ function ActivitiesPanel({
             golpes da internet.
           </p>
         </div>
-        <div className={`plan-status-card ${isPremium ? 'plan-premium' : 'plan-base'}`}>
-          <span>SEU PLANO</span>
-          <strong>{isPremium ? '⭐ Premium' : 'Base'}</strong>
-          <small>{isPremium ? 'Todas as dificuldades liberadas' : 'Atividades liberadas por nível'}</small>
-        </div>
         <div className="xp-card">
           <span>XP TOTAL</span>
           <strong>{progress.xp}</strong>
-          <small>{xpToNext ? `${xpToNext} XP até o próximo nível` : 'Nível máximo da demo'}</small>
+          <small>{xpToNext ? `${xpToNext} XP até o próximo nível` : 'Nível máximo conquistado 🎉'}</small>
         </div>
       </div>
-
-      {!isPremium && (
-        <div className="premium-upgrade-card">
-          <div>
-            <strong>Desbloqueie toda a jornada</strong>
-            <p>Acesse todas as dificuldades com o Premium. Nesta demonstração, a ativação é gratuita e não realiza cobrança.</p>
-          </div>
-          <button type="button" className="premium-upgrade-button" onClick={activatePremiumDemo}>
-            Ativar Premium (demo) →
-          </button>
-        </div>
-      )}
-      {premiumNotice && <p className="premium-success-message" role="status">{premiumNotice}</p>}
 
       {/* Seletor de Modo: Quiz vs Simulador Anti-Golpe */}
       <div className="activity-mode-pills">
@@ -1854,7 +1821,7 @@ function ActivitiesPanel({
           <div className="activity-stats">
             <div>
               <span>NÍVEL ATUAL</span>
-              <strong>Nível {level.level} · {level.label}</strong>
+              <strong>{level.label}</strong>
             </div>
             <div>
               <span>RESPONDIDAS</span>
@@ -1869,26 +1836,15 @@ function ActivitiesPanel({
               <strong>{user.streak} dia</strong>
             </div>
           </div>
-          <div className="activity-level-info">
-            {(['iniciante', 'intermediario', 'avancado'] as ActivityDifficulty[]).map((option) => (
-              <div key={option} className={isUnlocked(option) ? 'unlocked' : 'locked'}>
-                <strong>{isUnlocked(option) ? '✓' : '🔒'} Nível {getRequiredLevel(option)} — {option === 'intermediario' ? 'Intermediário' : option === 'avancado' ? 'Avançado' : 'Iniciante'}</strong>
-                <small>{isPremium ? 'Liberado pelo Premium' : `Necessário: ${(getRequiredLevel(option) - 1) * 100} XP`}</small>
-              </div>
-            ))}
-          </div>
           <div className="difficulty-tabs">
             <span>DIFICULDADE</span>
             {(['iniciante', 'intermediario', 'avancado'] as ActivityDifficulty[]).map((option) => (
               <button
                 key={option}
                 type="button"
-                disabled={!isUnlocked(option)}
-                title={getDifficultyLockMessage(option, level.level, userPlan) || 'Dificuldade liberada'}
-                className={`${difficulty === option ? 'active' : ''} ${isUnlocked(option) ? '' : 'locked'}`}
+                className={difficulty === option ? 'active' : ''}
                 onClick={() => changeDifficulty(option)}
               >
-                {!isUnlocked(option) && `🔒 Nível ${getRequiredLevel(option)} · `}
                 {option === 'intermediario' ? 'Intermediário' : option === 'avancado' ? 'Avançado' : 'Iniciante'}
               </button>
             ))}
@@ -1905,7 +1861,7 @@ function ActivitiesPanel({
                 <button
                   key={option}
                   type="button"
-                  disabled={selectedAnswer !== null || !isUnlocked(question.difficulty)}
+                  disabled={selectedAnswer !== null}
                   className={
                     selectedAnswer === null
                       ? ''

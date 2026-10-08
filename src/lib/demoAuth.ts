@@ -15,7 +15,6 @@ export const demoUser: UserProfile = {
   level: 'Explorador',
   streak: 1,
   xp: 0,
-  plan: 'base',
   completedActivities: 0,
   preferences: {
     focus: 'Fundamentos de Web3',
@@ -49,7 +48,6 @@ export function getCurrentUser(): UserProfile | null {
   const storedUser = sessionStorage.getItem(SESSION_KEY)
   if (!storedUser) return null
   const parsed = { ...demoUser, ...(JSON.parse(storedUser) as Partial<UserProfile>) }
-  parsed.plan = parsed.plan === 'premium' ? 'premium' : 'base'
   return ensurePracticeWallet(parsed)
 }
 
