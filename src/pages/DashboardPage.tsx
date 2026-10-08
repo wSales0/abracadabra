@@ -501,8 +501,8 @@ export function DashboardPage({ user: initialUser, onLogout }: DashboardPageProp
           <CommunityChatPanel user={user} onTriggerMission={triggerMission} />
         )}
         {activeTab === 'ranking' && (
-          <section className="panel-page">
-            <div className="wallet-header-block mb-6">
+          <section className="panel-page !max-w-4xl w-full">
+            <div className="wallet-header-block mb-8">
               <p className="dashboard-kicker">CLASSIFICAÇÃO GERAL · XP &amp; DESAFIOS</p>
               <h1>Ranking da Turma</h1>
               <p className="panel-lead">

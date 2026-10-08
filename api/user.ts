@@ -100,28 +100,73 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       if (action === 'leaderboard') {
+        const activitiesCol = db.collection('activities')
+        const missionsCol = db.collection('missions')
+
         const topDocs = await usersCol
           .find({
             $or: [
-              { xp: { $exists: true } },
               { displayName: { $exists: true } },
               { username: { $exists: true } },
+              { id: { $exists: true } },
             ],
           })
-          .sort({ xp: -1 })
-          .limit(20)
           .toArray()
 
-        const leaderboard = topDocs.map((u, index) => ({
+        const [activities, missions] = await Promise.all([
+          activitiesCol.find({}).toArray(),
+          missionsCol.find({}).toArray(),
+        ])
+
+        const actMap = new Map(activities.map((a) => [a.userId, a]))
+        const misMap = new Map(missions.map((m) => [m.userId, m]))
+
+        const mapped = topDocs.map((u) => {
+          const actDoc = actMap.get(u.id) || {}
+          const misDoc = misMap.get(u.id) || {}
+
+          const completedMissions = Array.isArray(misDoc.completedMissions) ? misDoc.completedMissions.length : 0
+          const completedActivities = typeof actDoc.answeredCount === 'number'
+            ? actDoc.answeredCount
+            : (typeof u.completedActivities === 'number' ? u.completedActivities : 0)
+
+          const actXp = typeof actDoc.xpTotal === 'number' ? actDoc.xpTotal : 0
+          const missionXp = completedMissions * 30
+          const directXp = typeof u.xp === 'number' ? u.xp : 0
+
+          let calculatedXp = Math.max(directXp, actXp + missionXp)
+          if (calculatedXp === 0 && (completedActivities > 0 || completedMissions > 0)) {
+            calculatedXp = (completedActivities * 20) + (completedMissions * 30)
+          }
+
+          if (calculatedXp > 0 && (!u.xp || u.xp < calculatedXp)) {
+            usersCol.updateOne(
+              { _id: u._id },
+              { $set: { xp: calculatedXp, completedActivities } }
+            ).catch(() => {})
+          }
+
+          return {
+            id: u.id,
+            name: u.displayName || u.username || 'Aluno',
+            avatarUrl: u.avatarUrl || '',
+            level: u.level || (calculatedXp >= 150 ? 'Especialista' : calculatedXp >= 60 ? 'Praticante' : 'Explorador'),
+            xp: calculatedXp,
+            completedActivities,
+            walletAddress: u.walletAddress || '',
+            lastSeen: u.lastSeen,
+          }
+        })
+
+        mapped.sort((a, b) => {
+          if (b.xp !== a.xp) return b.xp - a.xp
+          if (b.completedActivities !== a.completedActivities) return b.completedActivities - a.completedActivities
+          return a.name.localeCompare(b.name)
+        })
+
+        const leaderboard = mapped.slice(0, 25).map((u, index) => ({
+          ...u,
           rank: index + 1,
-          id: u.id,
-          name: u.displayName || u.username || 'Aluno',
-          avatarUrl: u.avatarUrl || '',
-          level: u.level || 'Explorador',
-          xp: typeof u.xp === 'number' ? u.xp : 100,
-          completedActivities: typeof u.completedActivities === 'number' ? u.completedActivities : 0,
-          walletAddress: u.walletAddress || '',
-          lastSeen: u.lastSeen,
         }))
 
         return res.status(200).json(leaderboard)

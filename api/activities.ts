@@ -120,6 +120,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         { upsert: true, returnDocument: 'after' }
       )
 
+      // Mantém a coleção de usuários sincronizada com o XP e total de atividades
+      const usersCol = db.collection('users')
+      await usersCol.updateOne(
+        { id: userId },
+        {
+          $inc: {
+            xp: Number(xpEarned) || 0,
+            completedActivities: 1,
+          },
+          $set: { updatedAt: new Date() },
+        }
+      )
+
       return res.status(200).json({
         success: true,
         progress: {
