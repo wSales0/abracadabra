@@ -1,4 +1,4 @@
-import type { ActivityDifficulty, ActivityQuestion } from '../types'
+import type { ActivityDifficulty, ActivityQuestion, UserPlan } from '../types'
 
 const COUNTER_KEY = 'abracadabra.activity.counter'
 const PROGRESS_KEY = 'abracadabra.activity.progress'
@@ -86,4 +86,19 @@ export function getLevelFromXp(xp: number) {
   const level = Math.floor(xp / 100) + 1
   const labels = ['Explorador', 'Aprendiz', 'Praticante', 'Construtor', 'On-chain']
   return { level, label: labels[Math.min(level - 1, labels.length - 1)], next: level * 100 }
+}
+
+// Base libera dificuldades por nível; Premium libera todas na demonstração.
+export function getRequiredLevel(difficulty: ActivityDifficulty): number {
+  return { iniciante: 1, intermediario: 2, avancado: 3 }[difficulty]
+}
+
+export function canAccessActivity(difficulty: ActivityDifficulty, userLevel: number, plan: UserPlan): boolean {
+  return plan === 'premium' || userLevel >= getRequiredLevel(difficulty)
+}
+
+export function getDifficultyLockMessage(difficulty: ActivityDifficulty, userLevel: number, plan: UserPlan): string {
+  return canAccessActivity(difficulty, userLevel, plan)
+    ? ''
+    : `Alcance o nível ${getRequiredLevel(difficulty)} para desbloquear esta atividade.`
 }
