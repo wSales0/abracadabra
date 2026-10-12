@@ -1,118 +1,166 @@
 <p align="center">
-  <a href="./README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-7C3AED?style=for-the-badge" /></a>
-  <a href="./README.pt-BR.md"><img alt="Português (BR)" src="https://img.shields.io/badge/lang-Português%20(BR)-14F195?style=for-the-badge&labelColor=09090F" /></a>
-</p>
-
-<p align="center">
+<a href="./README.md"><img alt="English" src="https://img.shields.io/badge/lang-English-7C3AED?style=for-the-badge" /></a>
+  <a href="./README.pt-BR.md"><img alt="Português (BR )" src="https://img.shields.io/badge/lang-Português%20(BR )-14F195?style=for-the-badge&labelColor=09090F" /></a>
+</p> <p align="center">
   <img src="./assets/logo-abracadabra.png" alt="Abracadabra" width="220" />
-</p>
+</p> <h1 align="center">Abracadabra · Web3 EdTech</h1> <p align="center">
+  <strong>Aprenda. Pratique. Converse. Evolua com confiança.</strong>  
 
-<h1 align="center">Abracadabra · Web3 EdTech</h1>
-
-<p align="center">
-  <strong>Aprenda. Pratique. Converse. Evolua sem medo.</strong><br />
-  A plataforma educacional Web3 pensada para todas as idades — de jovens estudantes a idosos dando seus primeiros passos no universo cripto.
-</p>
-
-<p align="center">
+  Uma plataforma gamificada para transformar conceitos de Web3 e Solana em prática guiada.
+</p> <p align="center">
   <img alt="Status" src="https://img.shields.io/badge/status-live%20production-14F195" />
   <img alt="Rede" src="https://img.shields.io/badge/rede-Solana%20Devnet-14F195" />
-  <img alt="Chat" src="https://img.shields.io/badge/chat-WebSockets%20ao%20vivo-7C3AED" />
-  <img alt="Categoria" src="https://img.shields.io/badge/categoria-EdTech%20Web3-09090F" />
+  <img alt="Backend" src="https://img.shields.io/badge/backend-MongoDB%20Atlas-47A248" />
+  <img alt="Chat" src="https://img.shields.io/badge/chat-MQTT%20sobre%20WSS-7C3AED" />
   <img alt="Deploy" src="https://img.shields.io/badge/deploy-Vercel-black" />
 </p>
 
----
+## O que é o Abracadabra?
 
-## 🧙‍♂️ O que é o Abracadabra?
+O **Abracadabra** é uma plataforma educacional gamificada para quem quer entender Web3, carteiras, segurança, mercado cripto e Solana de forma prática. A experiência combina trilhas guiadas, atividades interativas, missões, recompensas, comunidade e um ambiente de prática conectado ao ecossistema Solana.
 
-O **Abracadabra** é uma plataforma EdTech gamificada que desmistifica o universo de blockchain e criptomoedas. 
+A proposta é levar o aluno do primeiro contato com conceitos como chave pública, seed phrase e gas fee até experiências mais avançadas, como transferências de treino, swap, staking, leitura de transações e desafios de segurança.
 
-Em vez de jogar os usuários direto em exchanges ou riscos reais, o Abracadabra oferece um **laboratório de prática 100% seguro**: analogias com o dia a dia (como comparar Chave Pública com Chave Pix), simuladores anti-golpe, carteira de teste com torneira de moedas gratuitas e uma comunidade ao vivo com pessoas de verdade navegando juntas.
+## Funcionalidades
 
----
+### Carteira de prática Solana
 
-## ✨ Principais Funcionalidades
+- Carteira didática com endereço público, saldo inicial e histórico de transações.
 
-### 🧪 1. Carteira Prática Web3 (Solana Devnet Simulada)
-- **Geração Automática de Carteira:** Toda conta recebe uma chave pública e saldo inicial de treino (2.5 SOL Devnet).
-- **Torneira Gratuita (Faucet):** Botão para solicitar +1.0 SOL de teste sempre que quiser praticar sem custo real.
-- **Simulador de Envio On-Chain:** Pratique preencher chaves públicas de destino, acompanhar o débito de taxas de rede (*Gas Fee*) e verificar a assinatura/hash da transação.
-- **Histórico Completo de Transações:** Exibição clara de débitos, créditos, taxas e status de confirmação.
+- Faucet de SOL de treino para praticar sem usar fundos reais.
 
-### 💬 2. Comunidade & Chat em Tempo Real
-- **Pessoas de Verdade ao Vivo:** Conexão contínua via WebSockets globais (MQTT sobre WSS via EMQX e HiveMQ + BroadcastChannel local).
-- **Detecção de Presença (Heartbeat):** A coluna de alunos conectados exibe exatamente quem está navegando no site agora. Se você estiver sozinho, a plataforma avisa e disponibiliza botão de convite para amigos.
-- **Troca de Ideias Instantânea:** Bate-papo ao vivo para tirar dúvidas com colegas e instrutores em tempo real.
+- Envio e recebimento de SOL em ambiente de aprendizagem, com cálculo de taxa e assinatura de demonstração.
 
-### 🛡️ 3. Simulador Anti-Golpe ("Cilada ou Seguro?")
-- **Casos Reais do Cotidiano:** Mensagens de WhatsApp se passando por suporte, falsos airdrops, sites clonados e contratos suspeitos.
-- **Explicações Didáticas:** Ao responder se a situação é segura ou cilada, o aluno recebe a justificativa em linguagem clara e aprende regras de ouro (ex: *“Nunca compartilhe suas 12 palavras ou Chave Privada”*).
+- QR Code, cópia de endereço e explorador de transações.
 
-### 🎯 4. Trilha do Aprendiz (Missões Guiadas)
-- Barra de progresso interativa com percentual de conclusão.
-- Missões didáticas: descobrir a chave pública, coletar no faucet, fazer transferência de treino, acertar desafios no laboratório e passar no teste de segurança.
-- Recompensas instantâneas em **XP** e **SOL de treino**.
+- Alertas visuais, sonoros e por voz para cripto recebida.
 
-### 👓 5. Acessibilidade Inclusiva (Para Jovens e Idosos)
-- **Controle de Tamanho de Fonte:** Botão `Aa` no topo com 3 níveis (Normal, Grande, Muito Grande) com persistência local.
-- **Leitor em Áudio (Voz Nativa):** Botão de áudio para ouvir as perguntas e explicações em voz alta em português (Web Speech API).
-- **Tradutor do Cotidiano:** Dicionário intuitivo que compara termos técnicos com o dia a dia:
-  - *Chave Pública* = Sua Chave Pix (pode compartilhar sem medo).
-  - *Chave Privada* = Senha do Banco (nunca entregue a ninguém).
-  - *Gas Fee* = Tarifa de envio do correio/cartório.
-  - *Faucet* = Torneira pública de dinheiro de mentira para treinar.
+- Tokens de prática como SOL, USDC, ABRA e BTC.
 
-### 📊 6. Radar de Mercado e Notícias em Tempo Real
-- Cotações atualizadas das 8 principais moedas via API pública da [Crypto Vision News](https://cryptocurrency.cv/).
-- Radar diário de maior alta, maior queda e líder por market cap.
-- Manchetes com links diretos para as fontes originais respeitando direitos autorais.
+### Swap, staking e conversão
 
----
+- Swap educacional entre SOL, USDC e ABRA.
 
-## 🛠️ Tecnologias Utilizadas
+- Cofre de staking baseado em Proof-of-Stake, com saldo aplicado e recompensas de prática.
 
-- **Frontend:** React 19, TypeScript, Vite.
-- **Estilização:** CSS3 Moderno com variáveis, gradientes, Glassmorphism e Dark Mode.
-- **Comunicação em Tempo Real:** WebSockets (MQTT Client sobre TLS/WSS) + `BroadcastChannel` para multi-abas.
-- **Acessibilidade:** Web Speech API (Text-to-Speech) e Dynamic Font Scaling.
-- **Hospedagem & CI/CD:** Vercel integrada ao GitHub.
+- Conversor de moedas para relacionar valores cripto e moedas tradicionais.
 
----
+- Todos os fluxos foram desenhados para explicar conceitos e etapas de uso da Web3.
 
-## 🚀 Como Rodar o Projeto Localmente
+### Comunidade e chat ao vivo
+
+- Sala de comunidade com mensagens persistidas no backend.
+
+- Comunicação em tempo real via MQTT sobre WSS, com presença online e sincronização entre abas.
+
+- MongoDB Atlas para histórico de mensagens, presença e eventos de transferência.
+
+- Alertas quando uma transferência de prática chega para outro aluno.
+
+### Ranking da turma
+
+- Ranking persistente conectado ao MongoDB Atlas.
+
+- Pódio visual para os três primeiros colocados e lista dos demais participantes.
+
+- Pontuação calculada a partir de XP, respostas de atividades, missões concluídas e progresso individual.
+
+- Critérios de desempate por atividades concluídas e nome do aluno.
+
+- O ranking retorna os 25 melhores participantes e destaca o usuário atual.
+
+### Trilha, atividades e segurança
+
+- Missões guiadas com progresso, XP e SOL de prática.
+
+- Perguntas geradas por conceito, cenário e dificuldade: iniciante, intermediário e avançado.
+
+- Laboratório anti-golpe com situações de phishing, falsos airdrops, pedidos de seed phrase e promessas de lucro.
+
+- Desafio interativo para organizar uma seed phrase de 12 palavras.
+
+- Laboratório de diagnóstico para analisar falhas e situações comuns de rede.
+
+- Progresso de atividades salvo com histórico, acertos, respostas e XP.
+
+### Badges e certificado
+
+- Galeria de badges por marcos de aprendizagem, prática e segurança.
+
+- Certificado de conclusão Web3 preparado para a jornada do aluno.
+
+- Perfil com foto, nome, bio, foco de estudo, resumo semanal e preferências de acessibilidade.
+
+### Mercado e aprendizagem acessível
+
+- Cotações atualizadas de ativos e preço da SOL.
+
+- Radar com maior alta, maior queda e líder por capitalização.
+
+- Manchetes relacionadas com fonte, data e link para o artigo original.
+
+- Controle de fonte em três tamanhos e leitura em voz alta em português.
+
+- Analogias simples para aproximar conceitos técnicos do cotidiano.
+
+## Backend e arquitetura
+
+O frontend é construído com React, TypeScript e Vite. As funções serverless em `api/` são executadas pela Vercel e conectam o produto ao MongoDB Atlas.
+
+As rotas atuais incluem:
+
+- `api/user`: perfis, presença, transferências de prática e ranking.
+
+- `api/activities`: respostas, histórico, acertos e XP.
+
+- `api/missions`: missões concluídas por aluno.
+
+- `api/chat`: histórico e persistência das mensagens da comunidade.
+
+O cliente usa uma camada de serviço em `src/lib/mongoDbService.ts`, mantendo a interface desacoplada das rotas de backend. O ranking consolida dados de usuários, atividades e missões para ordenar a turma por progresso.
+
+## Tecnologias
+
+- **Frontend:** React 19, TypeScript e Vite.
+
+- **Backend:** Vercel Serverless Functions, Node.js e MongoDB Atlas.
+
+- **Banco:** MongoDB com coleções de usuários, atividades, missões e mensagens.
+
+- **Tempo real:** MQTT sobre WSS, broker seguro e `BroadcastChannel`.
+
+- **Web3:** conceitos e fluxos educacionais baseados em Solana Devnet.
+
+- **Acessibilidade:** Web Speech API e escala dinâmica de fonte.
+
+- **Deploy:** Vercel integrada ao GitHub.
+
+## Como executar
 
 ```bash
-# 1. Clone o repositório
 git clone https://github.com/wSales0/abracadabra.git
 cd abracadabra
-
-# 2. Instale as dependências
 npm install
-
-# 3. Inicie o servidor de desenvolvimento
 npm run dev
-
-# 4. Abra no navegador:
-# http://localhost:3000
 ```
 
-Para gerar a build de produção otimizada:
+Abra `http://localhost:3000` no navegador. Para gerar a build:
+
 ```bash
 npm run build
 ```
 
----
+Para executar o backend localmente, configure as variáveis de ambiente do MongoDB usadas pelas funções serverless e rode o projeto com o ambiente compatível da Vercel.
 
-## 👥 Credenciais de Demonstração
+## Credenciais de demonstração
 
-Para navegar e testar a plataforma:
-- **Login Demo:** `teste123`
-- **Senha Demo:** `123`
-- Ou utilize a opção **"Continuar com Google"** diretamente na tela inicial.
+```
+Usuário: teste123
+Senha: 123
+```
 
----
+Também existe um fluxo de acesso rápido com Google na interface.
 
-## 📄 Licença e Aviso Legal
+## Direitos autorais e aviso
 
-O **Abracadabra** é um projeto com fins estritamente **educacionais** desenvolvido para hackathon. Os dados de mercado e notícias exibidos têm propósito pedagógico e não constituem recomendação de investimento financeiro.
+O Abracadabra é a versão final do projeto desenvolvida para o hackathon. Dados de mercado e manchetes são usados para contexto, com atribuição e links para as fontes originais. O conteúdo editorial pertence aos respectivos publishers e não deve ser reproduzido sem autorização. Dados de mercado não constituem recomendação financeira.
